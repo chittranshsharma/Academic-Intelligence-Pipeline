@@ -33,3 +33,36 @@ SOUTH_ASIAN_SURNAMES = {
     "patel", "shah", "mehta", "gandhi", "desai", "parikh", "bhatt", "modi",
     "jani", "vyas", "trivedi", "amin", "rana", "raval", "kapadia",
     # Punjabi / Sikh
+    "singh", "kaur", "gill", "dhaliwal", "sidhu", "brar", "grewal", "sandhu",
+    "dhillon", "bajwa", "randhawa", "anand", "arora", "bhatia", "chopra",
+    "kapoor", "khanna", "malhotra", "mehra", "nagpal", "sachdeva", "saluja",
+    "sehgal", "sethi", "talwar", "taneja", "vohra", "walia",
+    # South Indian
+    "nair", "pillai", "menon", "iyer", "iyengar", "krishnan", "krishna",
+    "subramanian", "subramaniam", "rajan", "rajagopal", "rajagopalan",
+    "venkataraman", "venkatesh", "venkatesan", "narayanan", "narayana",
+    "gopalan", "gopinath", "anantharaman", "ramachandran", "chandrasekaran",
+    "parthasarathy", "srinivasan", "srinivas", "nagarajan", "suresh",
+    "balakrishnan", "balasubramanian", "sundaram", "sundararajan",
+    "natarajan", "viswanathan", "swaminathan", "ramasubramanian",
+    "murugan", "murugesan", "selvam", "arumugam", "palaniswamy",
+    "reddy", "redd", "rao", "naidu", "prasad", "murthy", "murali",
+    "madhavan", "mahadevan", "krishnamurthy", "krishnamurthhy",
+    "anand", "kumar", "kumari", "nandi", "bandyopadhyay",
+    # Bengali / East Indian
+    "bose", "roy", "chatterjee", "chattopadhyay", "banerjee", "bandyopadhyay",
+    "mukherjee", "mukhopadhyay", "ghosh", "chakraborty", "chakrabarti",
+    "sen", "dutta", "datta", "sarkar", "ganguly", "ganguli", "mitra",
+    "dasgupta", "guha", "biswas", "sanyal", "majumdar", "majumder",
+    "bhattacharya", "bhattacharyya", "saha", "bhadra",
+    # Rajasthani / Marwari
+    "gupta", "agarwal", "aggarwal", "agrawal", "jain", "goel", "goyal",
+    "bansal", "mittal", "singhal", "goyal", "khandelwal", "maheshwari",
+    "jhunjhunwala", "birla", "somani",
+    # UP / Bihar
+    "yadav", "verma", "srivastava", "shrivastava", "tripathi", "tripathy",
+    "kesarwani", "kushwaha",
+    # Kashmiri / North Indian
+    "raina", "koul", "kaul", "dhar", "kak", "matto", "mattoo",
+    # Maharashtra / Western India
+    "kulkarni", "deshpande", "joshi", "patil", "deshmukh", "bhosle",
