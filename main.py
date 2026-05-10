@@ -33,3 +33,39 @@ async def main():
     args = parser.parse_args()
     
     directory_urls = []
+    if args.file and os.path.exists(args.file):
+        with open(args.file, 'r', encoding='utf-8') as f:
+            directory_urls = [line.strip() for line in f if line.strip()]
+    elif args.urls:
+        directory_urls = args.urls
+        
+    if not directory_urls:
+        logger.error("No URLs provided to crawl.")
+        return
+
+    logger.info("=========================================")
+    logger.info("   Starting Faculty Extraction Pipeline   ")
+    logger.info("=========================================")
+    
+    # 1. Crawl
+    logger.info("--- PHASE 1: CRAWLING ---")
+    crawler = FacultyCrawler(
+        raw_html_dir="raw_html", 
+        output_json="raw_data.json", 
+        max_pages=args.max_pages,
+        max_profiles=args.max_profiles,
+        concurrency=args.concurrency,
+        use_playwright_profiles=args.use_playwright_profiles
+    )
+    await crawler.crawl_directories(directory_urls)
+    
+    # 2. Parse
+    logger.info("--- PHASE 2: PARSING & FILTERING ---")
+    fparser = FacultyParser(input_json="raw_data.json", output_json="cleaned_data.json", screenshots_dir="screenshots")
+    await fparser.process()
+    
+    # 3. Export
+    logger.info("--- PHASE 3: EXPORTING ---")
+    exporter = FacultyExporter(input_json="cleaned_data.json", output_dir="output")
+    exporter.export()
+    
