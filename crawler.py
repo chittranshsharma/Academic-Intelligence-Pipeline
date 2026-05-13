@@ -36,3 +36,25 @@ def is_likely_profile_link(url, base_url):
                 if after_kw not in ['index.html', 'index.php', 'search', 'all']:
                     return True
     return False
+
+class FacultyCrawler:
+    def __init__(self, raw_html_dir="raw_html", output_json="raw_data.json", 
+                 max_pages=100, max_profiles=1000, concurrency=10, 
+                 use_playwright_profiles=False):
+        self.raw_html_dir = raw_html_dir
+        self.output_json = output_json
+        self.max_pages = max_pages
+        self.max_profiles = max_profiles
+        self.concurrency = concurrency
+        self.use_playwright_profiles = use_playwright_profiles
+        
+        os.makedirs(self.raw_html_dir, exist_ok=True)
+        self.raw_data = []
+
+    async def crawl_directories(self, directory_urls):
+        discovered_profiles = []
+        
+        # --- PHASE 1: DISCOVER PROFILE URLS ---
+        logger.info("=========================================")
+        logger.info("   PHASE 1: DISCOVERING PROFILE URLS     ")
+        logger.info("=========================================")
