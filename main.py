@@ -69,3 +69,7 @@ async def main():
     exporter = FacultyExporter(input_json="cleaned_data.json", output_dir="output")
     exporter.export()
     
+    logger.info("Pipeline finished successfully.")
+
+if __name__ == "__main__":
+    asyncio.run(main())
