@@ -66,3 +66,40 @@ SOUTH_ASIAN_SURNAMES = {
     "raina", "koul", "kaul", "dhar", "kak", "matto", "mattoo",
     # Maharashtra / Western India
     "kulkarni", "deshpande", "joshi", "patil", "deshmukh", "bhosle",
+    "shinde", "pawar", "chavan", "jadhav", "thakur",
+    # Assamese / North East
+    "borah", "baruah", "deka", "kalita", "saikia", "gogoi",
+    # Odiya
+    "panda", "mohapatra", "mohanty", "das", "mishra", "jena", "nayak",
+    # Common suffixes / standalone surnames
+    "kumar", "devi", "lal", "ram", "das",
+
+    # ── PAKISTANI ──
+    "khan", "ahmed", "ahmad", "siddiqui", "siddique", "qureshi", "malik",
+    "chaudhry", "chaudhary", "choudhury", "choudhary", "akhtar", "akhter",
+    "hussain", "husain", "mirza", "sheikh", "shaikh", "baig", "hashmi",
+    "hashimi", "abbasi", "bukhari", "naqvi", "rizvi", "zaidi", "jafri",
+    "gilani", "raza", "nawaz", "butt", "bhatti", "cheema", "bajwa",
+    "warraich", "awan", "niazi", "afridi", "yousafzai", "durrani",
+    "tarin", "kashmiri", "ansari", "farooqui", "farooki", "osmani",
+    "syed", "saeed", "saeid", "saad", "mian", "iqbal", "saleem",
+    "nadeem", "anwar", "aslam", "asif", "ashraf", "akbar", "akram",
+    "ghafoor", "rehman", "rahman", "latif", "rashid", "rashed",
+    "pervez", "pervaiz", "asghar", "gul", "javed", "zahid", "zafar",
+    "tariq", "shafiq", "waqar", "imran", "wasim",
+
+    # ── BANGLADESHI ──
+    "islam", "hossain", "hasan", "hosen", "alam", "ali", "begum",
+    "chowdhury", "molla", "molla", "bhuiyan", "bhuyan", "sarker",
+    "uddin", "karim", "kabir", "monir", "akter", "khatun", "parvin",
+    "sultana", "talukder", "taluqdar", "dewan",
+
+    # ── SRI LANKAN ──
+    "perera", "fernando", "de silva", "desilva", "jayawardena", "jayawardene",
+    "wickramasinghe", "wickremasinghe", "rajapaksa", "rajapaksha",
+    "gunasekera", "gunawardena", "gunawardana", "amarasinghe",
+    "dissanayake", "dissanayaka", "ranasinghe", "weerasinghe",
+    "wickramaratne", "seneviratne", "karunaratne", "pathirana",
+    "rodrigo", "siriwardena", "kumarasinghe", "senanayake",
+    "thilakaratne", "samarasinghe", "samarageewa", "weerasekera",
+    "bandara", "rathnayake", "rathnayaka", "kumara", "madushan",
