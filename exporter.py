@@ -46,3 +46,31 @@ class FacultyExporter:
             df = df.drop_duplicates(subset=["profile_link"], keep="first")
             removed = before - len(df)
             if removed:
+                logger.info(f"Removed {removed} duplicate entries.")
+
+        # ── Clean phone / profile_link ──
+        if "phone" in df.columns:
+            df["phone"] = df["phone"].fillna("NA").replace("", "NA")
+        if "profile_link" in df.columns:
+            df["profile_link"] = df["profile_link"].fillna("")
+
+        # ── Rename columns ──
+        rename_mapping = {
+            "country":          "Region",
+            "university":       "University Name",
+            "department":       "Department",
+            "name":             "Faculty Name",
+            "origin":           "Origin",
+            "role":             "Position",
+            "email":            "Email",
+            "phone":            "Phone",
+            "profile_link":     "Profile link",
+            "research_interests": "Research",
+            "summary":          "Notes",
+        }
+        df = df.rename(columns=rename_mapping)
+
+        # ── Column order ──
+        ordered_cols = [
+            "Region", "University Name", "Department", "Faculty Name",
+            "Origin", "Position", "Email", "Phone", "Profile link",
