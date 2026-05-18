@@ -28,3 +28,26 @@
 
 The **Academic Intelligence Pipeline** is a fully automated, end-to-end data engineering system that discovers, scrapes, parses, and classifies faculty profiles from university websites across global institutions. It was architected to eliminate manual data collection bottlenecks and replace slow, error-prone human research with a deterministic, AI-augmented pipeline.
 
+At its core, the system combines **Playwright-driven browser automation** for JavaScript-rendered discovery pages, **high-concurrency HTTPX** for bulk profile downloads, **local LLM inference** (via Ollama) for structured field extraction, and **name-based heuristic filtering** to classify academic profiles by ethnicity/origin — all wired together in a three-phase asynchronous pipeline with structured logging and error recovery.
+
+> **Use Case:** Automatically build a structured dataset of South Asian-origin faculty members at global research institutions — complete with names, roles, departments, emails, research interests, and source URLs — with zero manual intervention after initial configuration.
+
+---
+
+## 🏗️ System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    ACADEMIC INTELLIGENCE PIPELINE                    │
+│                                                                     │
+│  ┌─────────────┐    ┌──────────────────┐    ┌────────────────────┐  │
+│  │  PHASE 1    │    │    PHASE 2        │    │    PHASE 3         │  │
+│  │  CRAWLING   │───▶│  PARSING & LLM   │───▶│  EXPORT & REPORT  │  │
+│  │             │    │  CLASSIFICATION  │    │                    │  │
+│  │ Playwright  │    │ BeautifulSoup +  │    │  CSV / XLSX        │  │
+│  │ HTTPX       │    │ Local LLM (Qwen) │    │  Deduplication     │  │
+│  │ Smart URL   │    │ Name Heuristics  │    │  Styled Reports    │  │
+│  │ Heuristics  │    │ Role Validation  │    │                    │  │
+│  └─────────────┘    └──────────────────┘    └────────────────────┘  │
+│                                                                     │
+│              Structured Logging · Async I/O · Error Recovery        │
