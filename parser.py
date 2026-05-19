@@ -103,3 +103,21 @@ SOUTH_ASIAN_SURNAMES = {
     "rodrigo", "siriwardena", "kumarasinghe", "senanayake",
     "thilakaratne", "samarasinghe", "samarageewa", "weerasekera",
     "bandara", "rathnayake", "rathnayaka", "kumara", "madushan",
+    "herath", "jayasekera", "jayasinghe", "aluthge",
+
+    # ── NEPALI ──
+    "thapa", "rai", "tamang", "gurung", "magar", "shrestha", "karki",
+    "poudel", "pokhrel", "adhikari", "bhattarai", "dahal", "koirala",
+    "acharya", "bhandari", "khadka", "subedi", "tiwari", "neupane",
+    "lama", "sherpa", "limbu", "chhetri",
+
+    # ── ADDITIONAL SOUTH INDIAN COMPOUND NAMES & PATTERNS ──
+    # These are common name tokens in South Indian full names
+    "vijayakumar", "vijayakumar", "rajakumar", "ramakumar", "senthilkumar",
+    "selvakumar", "manikandan", "karthikeyan", "karthik", "murugesan",
+    "sureshkumar", "rajkumar", "harikumar", "rajendran", "mahendran",
+    "sivasubramanian", "thirunavukkarasu", "shanmugasundaram",
+    "venkatraman", "venkataraman", "lakshmanan", "lakshminarayanan",
+    "paramasivam", "subramanyan", "narayanasamy", "devanathan",
+    "krishnaswamy", "krishnaswami", "sivaraman", "sivaramakrishnan",
+    "sundaresan", "balamurugan", "deivasigamani", "annamalai",
