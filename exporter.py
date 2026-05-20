@@ -74,3 +74,41 @@ class FacultyExporter:
         ordered_cols = [
             "Region", "University Name", "Department", "Faculty Name",
             "Origin", "Position", "Email", "Phone", "Profile link",
+            "Research", "Notes",
+        ]
+        existing = [c for c in ordered_cols if c in df.columns]
+        df = df[existing]
+
+        # ── Fill any remaining NaN in text cols ──
+        df = df.fillna("")
+
+        # ── S No ──
+        df.insert(0, "S No", range(1, len(df) + 1))
+        return df
+
+    def _style_xlsx(self, path):
+        """Apply professional styling: bold header, column widths, alternating rows, wrapping."""
+        wb = load_workbook(path)
+        ws = wb.active
+
+        header_fill = PatternFill("solid", fgColor=HEADER_COLOR)
+        alt_fill    = PatternFill("solid", fgColor=ALT_ROW_COLOR)
+        thin_border = Border(
+            left=Side(style="thin", color="AAAAAA"),
+            right=Side(style="thin", color="AAAAAA"),
+            top=Side(style="thin", color="AAAAAA"),
+            bottom=Side(style="thin", color="AAAAAA"),
+        )
+
+        # Style header row
+        for col_idx, cell in enumerate(ws[1], start=1):
+            cell.font      = Font(bold=True, color=HEADER_FONT, name="Calibri", size=11)
+            cell.fill      = header_fill
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=False)
+            cell.border    = thin_border
+
+            # Set column width from our map, fall back to auto-detect
+            col_name = cell.value or ""
+            width = COLUMN_WIDTHS.get(col_name, 20)
+            ws.column_dimensions[get_column_letter(col_idx)].width = width
+
