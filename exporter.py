@@ -112,3 +112,21 @@ class FacultyExporter:
             width = COLUMN_WIDTHS.get(col_name, 20)
             ws.column_dimensions[get_column_letter(col_idx)].width = width
 
+        # Style data rows
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):
+            fill = alt_fill if row_idx % 2 == 0 else None
+            for cell in row:
+                if fill:
+                    cell.fill = fill
+                cell.border    = thin_border
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+                cell.font      = Font(name="Calibri", size=10)
+
+        # Freeze the header row
+        ws.freeze_panes = "A2"
+
+        # Row height: a bit taller for data rows so wrapped text shows
+        ws.row_dimensions[1].height = 20
+        for row_idx in range(2, ws.max_row + 1):
+            ws.row_dimensions[row_idx].height = 60
+
