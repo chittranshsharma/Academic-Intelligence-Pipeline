@@ -51,3 +51,37 @@ At its core, the system combines **Playwright-driven browser automation** for Ja
 │  └─────────────┘    └──────────────────┘    └────────────────────┘  │
 │                                                                     │
 │              Structured Logging · Async I/O · Error Recovery        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+The pipeline is broken into three clearly separated, independently testable phases orchestrated by `main.py`:
+
+| Phase | Module | Responsibility |
+|-------|--------|---------------|
+| **1 — Crawl** | `crawler.py` | Discover profile URLs from faculty directory pages via Playwright; download raw HTML via HTTPX or Playwright |
+| **2 — Parse** | `parser.py` | Clean HTML → run local LLM extraction → apply name + role filters → enrich with personal website content |
+| **3 — Export** | `exporter.py` | Deduplicate, normalize, and export structured data to styled `.csv` and `.xlsx` |
+
+---
+
+## ✨ Key Features
+
+### 🤖 AI-Augmented Profile Extraction
+- Uses a **local LLM** (Qwen 3 14B via Ollama) to extract structured fields — name, role, email, department, research interests, origin — directly from raw HTML text
+- Enforces a strict zero-hallucination prompt: the model is instructed to return only explicitly stated information
+- **JSON-mode output** with robust multi-strategy parsing fallback for malformed LLM responses
+
+### 🕸️ Dual-Engine Web Crawler
+- **Playwright engine**: Headless Chromium for JavaScript-rendered directory pages; handles pagination automatically with `rel="next"`, text-based, and class-based link detection
+- **HTTPX engine**: Async, high-concurrency (configurable; default 10) bulk profile downloader using connection pooling — dramatically faster than browser-based alternatives
+- Smart URL heuristics filter out generic links (about, search, policies) and isolate only valid individual profile URLs
+
+### 🧬 Name-Based Heuristic Pre-Filter
+- A curated, comprehensive surname/first-name dataset spanning **India (all regions), Pakistan, Bangladesh, Sri Lanka, and Nepal** — 400+ entries
+- Applied as a fast pre-filter before any LLM call, cutting compute cost by skipping clearly non-matching profiles
+- Post-LLM double-check validates the extracted name against the same dataset
+
+### 📊 Automated Data Processing & Deduplication
+- Profile-URL-based deduplication ensures no duplicate records in the output
+- Field normalization: invalid emails (no `@`) and invalid phone numbers are automatically cleared
+- Confidence scoring on each record (`Name Matched + LLM Verified`)
