@@ -58,3 +58,18 @@ class FacultyCrawler:
         logger.info("=========================================")
         logger.info("   PHASE 1: DISCOVERING PROFILE URLS     ")
         logger.info("=========================================")
+        
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+            )
+
+            for dir_url in directory_urls:
+                logger.info(f"Starting discovery for directory: {dir_url}")
+                page_links = await self._discover_profiles_recursive(context, dir_url)
+                for link in page_links:
+                    if link not in discovered_profiles:
+                        discovered_profiles.append(link)
+                        if len(discovered_profiles) >= self.max_profiles:
+                            logger.info(f"Reached maximum profile limit of {self.max_profiles}. Stopping discovery.")
