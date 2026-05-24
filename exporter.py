@@ -130,3 +130,29 @@ class FacultyExporter:
         for row_idx in range(2, ws.max_row + 1):
             ws.row_dimensions[row_idx].height = 60
 
+        wb.save(path)
+        logger.info("Applied professional styling to xlsx.")
+
+    def export(self):
+        if not os.path.exists(self.input_json):
+            logger.error(f"Input file {self.input_json} does not exist.")
+            return
+
+        with open(self.input_json, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if not data:
+            logger.warning("No data to export.")
+            return
+
+        df = self._build_dataframe(data)
+
+        try:
+            # ── CSV ──
+            df.to_csv(self.csv_path, index=False, encoding="utf-8")
+            logger.info(f"Exported CSV  -> {self.csv_path}")
+        except Exception as e:
+            logger.error(f"Export error: {e}")
+
+
+if __name__ == "__main__":
