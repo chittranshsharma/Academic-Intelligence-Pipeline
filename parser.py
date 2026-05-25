@@ -121,3 +121,22 @@ SOUTH_ASIAN_SURNAMES = {
     "paramasivam", "subramanyan", "narayanasamy", "devanathan",
     "krishnaswamy", "krishnaswami", "sivaraman", "sivaramakrishnan",
     "sundaresan", "balamurugan", "deivasigamani", "annamalai",
+    "senthil", "sethu", "saravanan", "vasanthan", "vairamuthu",
+    "ramamurthy", "raghunathan", "raghavendra", "raghavan",
+    "jayaraman", "jayakumar", "jayaraj", "jeyaraj",
+    "ganesan", "ganesh", "ganeshkumar", "ganapathy", "ganapathi",
+    "prabhakar", "prabhakaran", "prabhu", "prabhakara",
+    "thiruvengadam", "thiruvenkatam", "thiagarajan", "thyagarajan",
+    "kuppuswamy", "kumarasamy", "kumaraswamy", "kumaresan",
+    "palaniappan", "palanisamy", "palanivelrajan",
+    "chidambaram", "chinnasamy", "chinnathambi",
+    "arunachalam", "arumughan", "arumugam", "arumuganathan",
+    # Telugu-specific
+    "venkatesh", "venkateswarlu", "venkataramana", "venkatarao",
+    "suryanarayana", "subrahmanyam", "satyanarayana", "satyamurthy",
+    "nagabhushanam", "lakshmipathi", "koteshwar", "kondaiah",
+    # Kannada-specific
+    "hegde", "shetty", "gowda", "naik", "bangera", "nambiar",
+    "balasubramanya", "shivakumar", "siddaramaiah",
+    # Malayalam-specific additional
+    "namboothiri", "nambudiri", "varma", "narayanan", "gopakumar",
