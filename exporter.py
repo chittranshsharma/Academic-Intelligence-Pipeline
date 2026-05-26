@@ -156,3 +156,6 @@ class FacultyExporter:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    exporter = FacultyExporter()
+    exporter.export()
