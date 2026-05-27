@@ -85,3 +85,21 @@ The pipeline is broken into three clearly separated, independently testable phas
 - Profile-URL-based deduplication ensures no duplicate records in the output
 - Field normalization: invalid emails (no `@`) and invalid phone numbers are automatically cleared
 - Confidence scoring on each record (`Name Matched + LLM Verified`)
+
+### 📁 Professional Report Export
+- Exports to both **CSV** and **styled XLSX**
+- XLSX features: dark navy header, alternating row colors, frozen header row, calibrated column widths, wrapped text, border styling — production-ready for stakeholder delivery
+
+### 📋 Structured Logging & Error Recovery
+- Full file + console logging with timestamps and module identifiers
+- On LLM or parsing failure: automatic Playwright screenshot capture for forensic debugging
+- Graceful error handling at every stage — the pipeline never crashes silently
+
+---
+
+## 📂 Project Structure
+
+```
+academic-intelligence-pipeline/
+│
+├── main.py              # 🚀 Orchestrator — runs all 3 pipeline phases
