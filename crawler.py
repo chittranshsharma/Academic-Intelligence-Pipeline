@@ -73,3 +73,47 @@ class FacultyCrawler:
                         discovered_profiles.append(link)
                         if len(discovered_profiles) >= self.max_profiles:
                             logger.info(f"Reached maximum profile limit of {self.max_profiles}. Stopping discovery.")
+                            break
+                if len(discovered_profiles) >= self.max_profiles:
+                    break
+                    
+            await browser.close()
+            
+        logger.info(f"Discovery complete. Discovered {len(discovered_profiles)} unique profile links.")
+        
+        if not discovered_profiles:
+            logger.warning("No profile links discovered. Exiting.")
+            return self.output_json
+
+        # --- PHASE 2: DOWNLOAD PROFILES ---
+        logger.info("=========================================")
+        logger.info("   PHASE 2: DOWNLOADING PROFILE PAGES    ")
+        logger.info("=========================================")
+        
+        if self.use_playwright_profiles:
+            logger.info("Downloading profiles using Playwright engine (slower)...")
+            await self._download_profiles_playwright(discovered_profiles, directory_urls[0])
+        else:
+            logger.info(f"Downloading profiles using HTTPX engine (concurrency={self.concurrency})...")
+            await self._download_profiles_httpx(discovered_profiles, directory_urls[0])
+            
+        # Write discovered data to output JSON
+        with open(self.output_json, 'w', encoding='utf-8') as f:
+            json.dump(self.raw_data, f, indent=4)
+            
+        logger.info(f"Crawling complete. Saved {len(self.raw_data)} profiles to {self.output_json}")
+        return self.output_json
+
+    async def _discover_profiles_recursive(self, context, start_url):
+        discovered = []
+        visited_pages = set()
+        current_url = start_url
+        page_num = 1
+        
+        page = await context.new_page()
+        
+        try:
+            while current_url and page_num <= self.max_pages:
+                if current_url in visited_pages:
+                    logger.info("Detected circular loop in pagination. Stopping.")
+                    break
