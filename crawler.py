@@ -117,3 +117,35 @@ class FacultyCrawler:
                 if current_url in visited_pages:
                     logger.info("Detected circular loop in pagination. Stopping.")
                     break
+                    
+                visited_pages.add(current_url)
+                logger.info(f"Loading directory page {page_num}: {current_url}")
+                
+                try:
+                    await page.goto(current_url, wait_until="networkidle", timeout=30000)
+                except PlaywrightTimeoutError:
+                    logger.warning(f"Timeout loading directory page {current_url}. Trying to parse partial DOM...")
+                
+                # Extract all absolute links on this page
+                links = await page.eval_on_selector_all('a[href]', 'elements => elements.map(e => e.href)')
+                
+                # Filter out general links
+                page_profiles = []
+                for link in links:
+                    if link and is_likely_profile_link(link, start_url):
+                        # Remove fragment
+                        clean_link = link.split('#')[0]
+                        if clean_link not in discovered and clean_link not in page_profiles:
+                            page_profiles.append(clean_link)
+                            
+                logger.info(f"Found {len(page_profiles)} profile links on page {page_num}")
+                discovered.extend(page_profiles)
+                
+                if len(discovered) >= self.max_profiles:
+                    break
+                    
+                # Find Next page URL
+                next_url = await self._find_next_page_url(page, start_url)
+                if next_url:
+                    current_url = next_url
+                    page_num += 1
