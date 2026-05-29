@@ -149,3 +149,41 @@ class FacultyCrawler:
                 if next_url:
                     current_url = next_url
                     page_num += 1
+                    await asyncio.sleep(0.5) # Soft delay
+                else:
+                    logger.info("No next page link found. End of pagination.")
+                    break
+        except Exception as e:
+            logger.error(f"Error during directory discovery: {e}")
+        finally:
+            await page.close()
+            
+        return discovered
+
+    async def _find_next_page_url(self, page, base_url):
+        try:
+            # 1. Look for rel="next" (standard SEO practice)
+            next_el = await page.query_selector('a[rel="next"]')
+            if next_el:
+                href = await next_el.get_attribute('href')
+                if href:
+                    return urljoin(base_url, href)
+                    
+            # 2. Look for text "Next" inside an anchor
+            links = await page.query_selector_all('a')
+            for link in links:
+                try:
+                    text = await link.inner_text()
+                    if text and "next" in text.lower().strip():
+                        href = await link.get_attribute('href')
+                        if href:
+                            return urljoin(base_url, href)
+                except Exception:
+                    continue
+                    
+            # 3. Look for standard class matches (e.g. next, pager__item--next)
+            next_class_el = await page.query_selector('a[class*="next"]')
+            if next_class_el:
+                href = await next_class_el.get_attribute('href')
+                if href:
+                    return urljoin(base_url, href)
