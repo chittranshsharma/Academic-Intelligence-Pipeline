@@ -140,3 +140,22 @@ SOUTH_ASIAN_SURNAMES = {
     "balasubramanya", "shivakumar", "siddaramaiah",
     # Malayalam-specific additional
     "namboothiri", "nambudiri", "varma", "narayanan", "gopakumar",
+    "harikrishnan", "balachandran", "surendran", "sudhakaran",
+    "raveendran", "raveendranath", "mohanan", "mohankumar",
+    # Common South Asian first names missed before
+    "ajitha", "ajith", "maithilee", "maithili", "kunda", "kundal",
+    "pradeepkumar", "rajagopalan", "sivarajan", "sivaraja",
+    "thirumalai", "thirumurthy", "thirupathi", "thirumalaikolundu",
+
+    # ── COMMON SOUTH ASIAN FIRST NAMES (for when surname alone is ambiguous) ──
+    "amit", "anil", "ajay", "alok", "anoop", "arjun", "arvind", "ashish",
+    "ashok", "atul", "deepak", "dhruv", "girish", "hardik", "harish",
+    "hemant", "hitesh", "kamal", "karan", "lalit", "mahesh", "manish",
+    "manoj", "mayank", "mukesh", "naresh", "naveen", "nikhil", "nitin",
+    "pankaj", "parag", "parth", "piyush", "pradeep", "prakash", "prasad",
+    "praveen", "priyank", "rajesh", "rakesh", "ramesh", "rohit", "sachin",
+    "sandeep", "sanjay", "santosh", "saurabh", "shyam", "sudhir", "sumit",
+    "sunil", "suresh", "tarun", "umesh", "uday", "vijay", "vikram",
+    "vinay", "vineet", "vishal", "vivek", "yogesh",
+    "priya", "anita", "kavita", "rekha", "sunita", "usha", "meena",
+    "geeta", "gita", "nisha", "neha", "pooja", "puja", "ritu", "sonal",
