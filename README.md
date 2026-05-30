@@ -103,3 +103,27 @@ The pipeline is broken into three clearly separated, independently testable phas
 academic-intelligence-pipeline/
 │
 ├── main.py              # 🚀 Orchestrator — runs all 3 pipeline phases
+├── crawler.py           # 🕸️  Phase 1: URL discovery + HTML download (Playwright + HTTPX)
+├── parser.py            # 🧠  Phase 2: HTML cleaning + LLM extraction + filtering
+├── exporter.py          # 📊  Phase 3: Deduplication + CSV/XLSX export
+│
+├── requirements.txt     # Python dependencies
+│
+├── raw_html/            # Intermediate: raw downloaded HTML files (auto-created)
+├── logs/                # Structured pipeline logs (auto-created)
+├── screenshots/         # Debug screenshots on parse errors (auto-created)
+├── output/              # Final output: faculty_data.csv, faculty_data.xlsx
+│
+├── raw_data.json        # Intermediate: crawl output (URL + HTML path index)
+└── cleaned_data.json    # Intermediate: LLM-parsed, filtered profile records
+```
+
+---
+
+## ⚙️ Installation
+
+### Prerequisites
+
+| Requirement | Version |
+|-------------|---------|
+| Python | 3.11+ |
