@@ -159,3 +159,21 @@ SOUTH_ASIAN_SURNAMES = {
     "vinay", "vineet", "vishal", "vivek", "yogesh",
     "priya", "anita", "kavita", "rekha", "sunita", "usha", "meena",
     "geeta", "gita", "nisha", "neha", "pooja", "puja", "ritu", "sonal",
+    "swati", "deepa", "divya", "manisha", "mridula", "nidhi", "puja",
+    "radha", "sarita", "seema", "shipra", "shweta", "smita", "sneha",
+    "sonia", "sujata", "varsha", "vidya",
+    # Pakistani / Bangladeshi first names
+    "ayesha", "aisha", "fatima", "fathima", "zainab", "zaynab",
+    "maryam", "mariam", "hafsa", "sana", "sara", "amina", "aminah",
+    "nadia", "nafia", "rizwana", "sumaiya", "sumaiya", "tahira",
+    "muhammad", "mohammed", "mohammad", "usman", "umar", "omar",
+    "bilal", "hamza", "hassan", "humaira", "saad", "talha", "taha",
+    "zaid", "zayd", "yusuf", "yousuf", "shoaib", "qasim", "obaid",
+    "mujeeb", "mubashir", "mehboob", "mazhar", "masood",
+}
+
+def is_south_asian_name(full_name: str) -> bool:
+    """
+    Fast pre-filter: check if any token in the name matches our South Asian name list.
+    Case-insensitive. Returns True if at least one name part matches.
+    """
