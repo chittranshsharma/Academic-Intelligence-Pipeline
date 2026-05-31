@@ -187,3 +187,36 @@ class FacultyCrawler:
                 href = await next_class_el.get_attribute('href')
                 if href:
                     return urljoin(base_url, href)
+        except Exception as e:
+            logger.warning(f"Error searching for next page: {e}")
+        return None
+
+    # --- HTTPX DOWNLOAD ENGINE (FAST & LIGHTWEIGHT) ---
+    async def _download_profiles_httpx(self, profile_urls, source_page):
+        semaphore = asyncio.Semaphore(self.concurrency)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+        }
+        
+        async def download_one(client, url, idx):
+            async with semaphore:
+                try:
+                    logger.info(f"[{idx+1}/{len(profile_urls)}] Fetching: {url}")
+                    resp = await client.get(url, timeout=15.0)
+                    resp.raise_for_status()
+                    
+                    filename = f"profile_{idx}.html"
+                    filepath = os.path.join(self.raw_html_dir, filename)
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(resp.text)
+                        
+                    self.raw_data.append({
+                        "source_page": source_page,
+                        "profile_url": url,
+                        "raw_html_file": filepath,
+                        "scraped_at": datetime.now().isoformat()
+                    })
+                except Exception as e:
+                    logger.error(f"Failed to download {url}: {e}")
+
+        # Use an AsyncClient to reuse TCP connections (extremely fast)
