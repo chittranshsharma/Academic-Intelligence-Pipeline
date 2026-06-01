@@ -220,3 +220,29 @@ class FacultyCrawler:
                     logger.error(f"Failed to download {url}: {e}")
 
         # Use an AsyncClient to reuse TCP connections (extremely fast)
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
+            tasks = [download_one(client, url, i) for i, url in enumerate(profile_urls)]
+            await asyncio.gather(*tasks)
+
+    # --- PLAYWRIGHT DOWNLOAD ENGINE (SLOW BUT ROBUST FALLBACK) ---
+    async def _download_profiles_playwright(self, profile_urls, source_page):
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+            )
+            
+            for i, url in enumerate(profile_urls):
+                page = await context.new_page()
+                try:
+                    logger.info(f"[{i+1}/{len(profile_urls)}] Loading via Playwright: {url}")
+                    await page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                    html_content = await page.content()
+                    
+                    filename = f"profile_{i}.html"
+                    filepath = os.path.join(self.raw_html_dir, filename)
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(html_content)
+                        
+                    self.raw_data.append({
+                        "source_page": source_page,
