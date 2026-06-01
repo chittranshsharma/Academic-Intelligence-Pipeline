@@ -177,3 +177,35 @@ def is_south_asian_name(full_name: str) -> bool:
     Fast pre-filter: check if any token in the name matches our South Asian name list.
     Case-insensitive. Returns True if at least one name part matches.
     """
+    if not full_name:
+        return False
+    tokens = re.split(r'[\s\-\.]+', full_name.lower())
+    for token in tokens:
+        token = token.strip()
+        if len(token) < 2:
+            continue
+        if token in SOUTH_ASIAN_SURNAMES:
+            return True
+    return False
+
+
+class FacultyParser:
+    def __init__(self, input_json="raw_data.json", output_json="cleaned_data.json", screenshots_dir="screenshots"):
+        self.input_json = input_json
+        self.output_json = output_json
+        self.screenshots_dir = screenshots_dir
+        os.makedirs(self.screenshots_dir, exist_ok=True)
+
+        self.client = AsyncOpenAI(
+            base_url="http://localhost:11434/v1",
+            api_key="ollama"
+        )
+        self.model_name = "qwen3:14b"
+
+    def _is_valid_role(self, role: str) -> bool:
+        if not role:
+            return False
+        role_lower = role.lower()
+        for exclude in HARD_EXCLUDE_ROLES:
+            if exclude in role_lower:
+                return False
