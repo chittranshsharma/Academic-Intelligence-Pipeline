@@ -127,3 +127,22 @@ academic-intelligence-pipeline/
 | Requirement | Version |
 |-------------|---------|
 | Python | 3.11+ |
+| [Ollama](https://ollama.ai) | Latest |
+| Qwen3:14b model | via Ollama |
+| Chromium (for Playwright) | Auto-installed |
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/academic-intelligence-pipeline.git
+cd academic-intelligence-pipeline
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
