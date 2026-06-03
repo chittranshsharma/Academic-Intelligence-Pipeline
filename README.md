@@ -146,3 +146,31 @@ python -m venv .venv
 # Windows
 .venv\Scripts\activate
 
+# macOS / Linux
+source .venv/bin/activate
+```
+
+### 3. Install Python dependencies
+
+```bash
+pip install -r requirements.txt
+playwright install chromium
+```
+
+### 4. Start Ollama and pull the LLM model
+
+```bash
+# Install Ollama from https://ollama.ai, then:
+ollama pull qwen3:14b
+ollama serve
+```
+
+> **Note:** The LLM runs entirely **locally** — no data leaves your machine and no API keys are required.
+
+---
+
+## 🚀 Usage
+
+### Basic — scrape a single faculty directory
+
+```bash
