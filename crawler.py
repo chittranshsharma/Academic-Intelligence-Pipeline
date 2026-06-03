@@ -246,3 +246,14 @@ class FacultyCrawler:
                         
                     self.raw_data.append({
                         "source_page": source_page,
+                        "profile_url": url,
+                        "raw_html_file": filepath,
+                        "scraped_at": datetime.now().isoformat()
+                    })
+                    await asyncio.sleep(0.5) # Soft rate limiting
+                except Exception as e:
+                    logger.error(f"Error loading {url} via Playwright: {e}")
+                finally:
+                    await page.close()
+                    
+            await browser.close()
