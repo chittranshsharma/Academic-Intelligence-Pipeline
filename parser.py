@@ -209,3 +209,28 @@ class FacultyParser:
         for exclude in HARD_EXCLUDE_ROLES:
             if exclude in role_lower:
                 return False
+        for include in HARD_INCLUDE_ROLES:
+            if include in role_lower:
+                return True
+        return False
+
+    async def _take_screenshot(self, html_filepath, error_name):
+        try:
+            abs_path = os.path.abspath(html_filepath)
+            file_url = f"file:///{abs_path.replace(chr(92), '/')}"
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
+                await page.goto(file_url)
+                screenshot_path = os.path.join(self.screenshots_dir, f"{error_name}.png")
+                await page.screenshot(path=screenshot_path)
+                await browser.close()
+        except Exception as e:
+            logger.error(f"Failed to take screenshot for {html_filepath}: {e}")
+
+    def _clean_html(self, html_content):
+        """Strip HTML to plain readable text only."""
+        soup = BeautifulSoup(html_content, 'html.parser')
+        for element in soup(["script", "style", "nav", "footer", "header", "meta", "noscript"]):
+            element.extract()
+        lines = [line.strip() for line in soup.get_text(separator="\n").splitlines()]
