@@ -174,3 +174,23 @@ ollama serve
 ### Basic — scrape a single faculty directory
 
 ```bash
+python main.py --urls "https://www.example-university.ac.uk/staff"
+```
+
+### Bulk — scrape multiple institutions from a file
+
+```bash
+# urls.txt — one URL per line
+python main.py --file urls.txt
+```
+
+### Full configuration
+
+```bash
+python main.py \
+  --file urls.txt \
+  --max-pages 50 \
+  --max-profiles 500 \
+  --concurrency 15 \
+  --use-playwright-profiles
+```
