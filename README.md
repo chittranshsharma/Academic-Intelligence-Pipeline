@@ -194,3 +194,35 @@ python main.py \
   --concurrency 15 \
   --use-playwright-profiles
 ```
+
+### CLI Reference
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--urls` | — | Space-separated list of directory URLs to scrape |
+| `--file` | — | Path to a `.txt` file with one URL per line |
+| `--max-pages` | `100` | Maximum directory pages to paginate through per URL |
+| `--max-profiles` | `1000` | Hard cap on profiles to discover |
+| `--concurrency` | `10` | Parallel HTTPX download workers |
+| `--use-playwright-profiles` | `False` | Use Playwright (slower, more robust) for profile downloads |
+
+---
+
+## 📤 Output
+
+After a successful pipeline run, results are saved to the `output/` directory:
+
+### `faculty_data.csv`
+Raw tabular export for downstream processing or database ingestion.
+
+### `faculty_data.xlsx`
+Professionally styled spreadsheet — ready for immediate stakeholder delivery.
+
+| S No | Region | University Name | Department | Faculty Name | Origin | Position | Email | Phone | Profile Link | Research | Notes |
+|------|--------|-----------------|------------|--------------|--------|----------|-------|-------|--------------|----------|-------|
+| 1 | UK | University of Cambridge | Dept. of Computer Science | Dr. Priya Nair | India | Associate Professor | p.nair@cam.ac.uk | +44 … | https://… | NLP, ML | Expert in multi-lingual … |
+| … | … | … | … | … | … | … | … | … | … | … | … |
+
+---
+
+## 🔬 Technical Deep Dive
