@@ -234,3 +234,31 @@ class FacultyParser:
         for element in soup(["script", "style", "nav", "footer", "header", "meta", "noscript"]):
             element.extract()
         lines = [line.strip() for line in soup.get_text(separator="\n").splitlines()]
+        text = "\n".join(line for line in lines if line)
+        return text[:14000]
+
+    def _extract_personal_website(self, html_content, profile_url="") -> str:
+        """Extract a personal/lab website URL from the profile HTML if present.
+        Only considers external links (different domain) to avoid picking up
+        internal university pages like accessibility statements."""
+        from urllib.parse import urlparse
+        soup = BeautifulSoup(html_content, 'html.parser')
+        profile_domain = urlparse(profile_url).netloc if profile_url else ""
+
+        # Blocked path fragments — internal/admin university pages
+        blocked_fragments = [
+            'accessibility', 'privacy', 'cookie', 'terms', 'policy',
+            'statement', 'login', 'search', 'contact', 'support', 'help',
+            'admin', 'intranet', 'my.', 'portal'
+        ]
+
+        keywords = ['personal website', 'homepage', 'personal home', 'lab website',
+                    'research group', 'personal page', 'website', 'home page',
+                    'personal site', 'my website', 'group website']
+
+        for a in soup.find_all('a', href=True):
+            link_text = a.get_text(strip=True).lower()
+            href = a['href']
+            if not href.startswith('http'):
+                continue
+            parsed = urlparse(href)
