@@ -262,3 +262,37 @@ class FacultyParser:
             if not href.startswith('http'):
                 continue
             parsed = urlparse(href)
+            # Must be a different domain (external / truly personal)
+            if profile_domain and parsed.netloc == profile_domain:
+                continue
+            # Skip blocked internal pages
+            full_path = (parsed.netloc + parsed.path).lower()
+            if any(b in full_path for b in blocked_fragments):
+                continue
+            if any(kw in link_text for kw in keywords):
+                return href
+        return ""
+
+
+    async def _fetch_personal_website_text(self, url: str) -> str:
+        """Fetch a personal website and return its cleaned plain text."""
+        if not url:
+            return ""
+        try:
+            logger.info(f"Fetching personal website: {url}")
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True,
+                                         headers={"User-Agent": "Mozilla/5.0"}) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for element in soup(["script", "style", "nav", "footer", "header",
+                                  "meta", "noscript", "aside"]):
+                element.extract()
+            lines = [line.strip() for line in soup.get_text(separator="\n").splitlines()]
+            text = "\n".join(line for line in lines if line)
+            logger.info(f"Got {len(text)} chars from personal website.")
+            return text[:8000]  # Cap so we don't blow LLM context
+        except Exception as e:
+            logger.warning(f"Could not fetch personal website {url}: {e}")
+            return ""
+
