@@ -226,3 +226,41 @@ Professionally styled spreadsheet — ready for immediate stakeholder delivery.
 ---
 
 ## 🔬 Technical Deep Dive
+
+### Crawler — Smart URL Heuristics
+
+The crawler uses a path-structure heuristic to distinguish individual faculty profile URLs from generic site links:
+
+```python
+# Only accepts URLs where a known directory keyword is followed by a unique identifier
+# e.g. /staff/john-doe ✅   /staff/search ❌   /about ❌
+for kw in ['people', 'profile', 'staff', 'faculty', 'expert', 'member']:
+    if kw in parts and idx < len(parts) - 1:
+        if after_kw not in ['index.html', 'search', 'all']:
+            return True  # Likely a profile
+```
+
+### Parser — LLM Prompt Engineering
+
+The LLM is given a strict, zero-hallucination system prompt and a structured user prompt specifying exact output keys with explicit rules — no markdown, no explanation, raw JSON only:
+
+```
+- "name": Faculty member's full name WITHOUT any titles (no Prof., Dr., etc.)
+- "email": Must contain @. Empty string if not found.
+- "research_interests": Max 10–15 words. No paragraphs.
+- "origin": South Asian country only. If unclear, write "South Asian".
+```
+
+### Parser — Personal Website Enrichment
+
+For richer research interest and summary fields, the system:
+1. Detects external personal/lab website links on the profile page
+2. Fetches and cleans their content (up to 8,000 chars)
+3. Appends it to the LLM context before extraction
+
+### Exporter — Deduplication Strategy
+
+Deduplication is performed on the `profile_link` (URL) column — the most reliable unique identifier — before any export:
+
+```python
+df = df.drop_duplicates(subset=["profile_link"], keep="first")
