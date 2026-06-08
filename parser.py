@@ -296,3 +296,47 @@ class FacultyParser:
             logger.warning(f"Could not fetch personal website {url}: {e}")
             return ""
 
+    def _get_name_from_url(self, url: str) -> str:
+        """Try to extract a readable name from the profile URL as a quick pre-check."""
+        try:
+            path = url.rstrip('/').split('/')[-1]
+            path = re.sub(r'\.html?$', '', path, flags=re.IGNORECASE)
+            # Convert underscores/dashes to spaces
+            name = path.replace('_', ' ').replace('-', ' ')
+            # If there are no spaces, it's likely a merged slug (e.g. amythomas)
+            # We return "" so the pre-filter skips and the LLM extracts the real name.
+            if ' ' not in name:
+                return ""
+            return name.strip()
+        except Exception:
+            return ""
+
+    def _parse_json(self, raw_text):
+        """Robustly extract JSON from LLM response."""
+        if not raw_text:
+            return None
+        text = re.sub(r'^```(?:json)?', '', raw_text.strip(), flags=re.IGNORECASE)
+        text = re.sub(r'```$', '', text.strip()).strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group(0))
+                except json.JSONDecodeError:
+                    pass
+        logger.warning(f"Could not parse JSON from LLM response: {raw_text[:200]}")
+        return None
+
+    async def _extract_profile_data(self, page_text, url):
+        """
+        Extract all structured profile fields using the LLM.
+        Instructs the model to ONLY report what is explicitly on the page — no hallucinations.
+        """
+        system_prompt = (
+            "You are a precise academic data extraction assistant. "
+            "Extract ONLY information that is EXPLICITLY WRITTEN on the page. "
+            "Do NOT infer, guess, or hallucinate. "
+            "If a field is not clearly present, return an empty string. "
+            "Return ONLY a raw JSON object with no markdown or explanation."
