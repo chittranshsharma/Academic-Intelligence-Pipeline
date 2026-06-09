@@ -264,3 +264,42 @@ Deduplication is performed on the `profile_link` (URL) column — the most relia
 
 ```python
 df = df.drop_duplicates(subset=["profile_link"], keep="first")
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Language | Python 3.11+ |
+| Browser Automation | Playwright (async, headless Chromium) |
+| HTTP Client | HTTPX (async, connection pooling) |
+| HTML Parsing | BeautifulSoup4 |
+| LLM Backend | Ollama (local) — Qwen3:14b |
+| LLM Client | OpenAI-compatible Python SDK |
+| Data Processing | Pandas |
+| Report Export | openpyxl (styled XLSX) |
+| Logging | Python `logging` (file + console) |
+| Async Runtime | asyncio |
+
+---
+
+## 📈 Performance Characteristics
+
+| Metric | Typical Value |
+|--------|---------------|
+| Directory pages crawled/min | ~30–60 (network-dependent) |
+| Profile downloads (HTTPX, 10 workers) | ~80–120 profiles/min |
+| LLM extraction time per profile | ~2–5s (Qwen3:14b on CPU/GPU) |
+| Deduplication overhead | Negligible (<1s for 10k records) |
+| End-to-end for 500 profiles | ~15–30 minutes |
+
+---
+
+## 🧪 Running Individual Modules
+
+Each module can be run standalone for development and debugging:
+
+```bash
+# Re-run parsing only (uses existing raw_data.json)
