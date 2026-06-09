@@ -340,3 +340,45 @@ class FacultyParser:
             "Do NOT infer, guess, or hallucinate. "
             "If a field is not clearly present, return an empty string. "
             "Return ONLY a raw JSON object with no markdown or explanation."
+        )
+
+        user_prompt = f"""
+Extract the following from this university faculty profile page.
+Return a JSON object with exactly these keys:
+
+- "university": Full official university name (NOT a URL). Look in page header/footer/title.
+- "department": Full department or school name.
+- "name": Faculty member's full name WITHOUT any titles (no Prof., Dr., Mr., Ms., etc.).
+- "role": Academic position exactly as stated (e.g., "Professor", "Lecturer", "Reader", "Senior Lecturer").
+- "email": Email address. Must contain @. Empty string if not found.
+- "phone": Phone number as written (with country code if present). Empty string if not found.
+- "research_interests": A VERY SHORT (maximum 10-15 words) comma-separated list of their core research topics. DO NOT write paragraphs. Keep it under one line. Do NOT leave this empty if research content is present.
+- "summary": A VERY SHORT (maximum 10-15 words) single-sentence summary of the person's role or main focus. DO NOT write paragraphs. Keep it under one line. Do NOT leave this empty if any biographical content is present.
+- "origin": Specific South Asian country of origin deduced from their name and any biographical info
+             (e.g., "India", "Pakistan", "Bangladesh", "Sri Lanka", "Nepal"). 
+             Only use South Asian countries here. If unclear, write "South Asian".
+
+STRICT RULES:
+1. "name" = person's name only, no titles at all.
+2. "email" must contain @. If not, set to "".
+3. "phone" must only have digits, spaces, +, -, (, ). No other text.
+4. For research_interests and summary: extract from ALL content provided including the personal website
+   section. These are the most important fields — do your best to populate them.
+5. Never invent data not present anywhere in the text.
+
+Profile URL: {url}
+
+Combined Page Content (university profile + personal website):
+{page_text}
+"""
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.0,
+                response_format={"type": "json_object"}
+            )
+            raw = response.choices[0].message.content.strip()
