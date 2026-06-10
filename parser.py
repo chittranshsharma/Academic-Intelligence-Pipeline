@@ -382,3 +382,25 @@ Combined Page Content (university profile + personal website):
                 response_format={"type": "json_object"}
             )
             raw = response.choices[0].message.content.strip()
+            return self._parse_json(raw)
+        except Exception as e:
+            logger.error(f"LLM call failed for {url}: {e}")
+            return None
+
+    async def process(self):
+        if not os.path.exists(self.input_json):
+            logger.error(f"Input file {self.input_json} does not exist.")
+            return
+
+        with open(self.input_json, 'r', encoding='utf-8') as f:
+            raw_data = json.load(f)
+
+        cleaned_data = []
+        skipped_not_south_asian = 0
+        skipped_role = 0
+
+        for idx, item in enumerate(raw_data):
+            html_file = item.get("raw_html_file")
+            profile_url = item.get("profile_url", "")
+
+            if not html_file or not os.path.exists(html_file):
