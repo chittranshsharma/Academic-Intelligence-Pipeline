@@ -404,3 +404,27 @@ Combined Page Content (university profile + personal website):
             profile_url = item.get("profile_url", "")
 
             if not html_file or not os.path.exists(html_file):
+                logger.warning(f"HTML file missing for {profile_url}")
+                continue
+
+            # ── FAST PRE-FILTER: Check name from URL before any LLM call ──
+            url_name = self._get_name_from_url(profile_url)
+            if url_name and not is_south_asian_name(url_name):
+                logger.info(f"[{idx+1}/{len(raw_data)}] Skipped '{url_name}' — name not South Asian (URL pre-filter).")
+                skipped_not_south_asian += 1
+                continue
+
+            # ── This profile looks potentially South Asian — call LLM ──
+            try:
+                with open(html_file, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+
+                page_text = self._clean_html(html_content)
+
+                # ── Fetch personal website for richer Research & Notes ──
+                personal_site_url = self._extract_personal_website(html_content, profile_url)
+                personal_site_text = await self._fetch_personal_website_text(personal_site_url)
+                if personal_site_text:
+                    page_text = (
+                        page_text
+                        + "\n\n=== PERSONAL WEBSITE CONTENT ===\n"
