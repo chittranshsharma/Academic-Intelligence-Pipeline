@@ -303,3 +303,41 @@ Each module can be run standalone for development and debugging:
 
 ```bash
 # Re-run parsing only (uses existing raw_data.json)
+python parser.py
+
+# Re-run export only (uses existing cleaned_data.json)
+python exporter.py
+```
+
+---
+
+## 📝 Logging
+
+All pipeline activity is logged to both the console and `logs/scraper.log`:
+
+```
+2026-06-20 14:32:01,042 - main       - INFO - === Starting Faculty Extraction Pipeline ===
+2026-06-20 14:32:01,043 - main       - INFO - --- PHASE 1: CRAWLING ---
+2026-06-20 14:32:03,211 - crawler    - INFO - Found 48 profile links on page 1
+2026-06-20 14:32:45,819 - parser     - INFO - [12/48] LLM extracting: https://...
+2026-06-20 14:32:48,002 - parser     - INFO - INCLUDED: Priya Nair | Associate Professor | Univ. of Cambridge | Origin: India
+2026-06-20 14:33:10,441 - exporter   - INFO - Removed 3 duplicate entries.
+2026-06-20 14:33:10,502 - exporter   - INFO - Exported CSV  -> output/faculty_data.csv
+```
+
+On parsing failures, a screenshot of the problematic HTML is automatically saved to `screenshots/` for forensic debugging.
+
+---
+
+## 🔒 Privacy & Ethics
+
+- This pipeline is intended for **research and academic intelligence purposes only**
+- All data collected is **publicly available** on institutional websites
+- No authentication is bypassed; no private data is accessed
+- The system respects standard HTTP conventions and includes soft rate-limiting (`asyncio.sleep`) between requests
+- Ensure compliance with the **Terms of Service** of each institution's website before large-scale scraping
+
+---
+
+## 🤝 Contributing
+
