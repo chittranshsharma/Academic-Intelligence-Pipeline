@@ -462,3 +462,23 @@ Combined Page Content (university profile + personal website):
                     continue
 
                 # Validate email and phone
+                email = profile_data.get("email", "").strip()
+                phone = profile_data.get("phone", "").strip()
+
+                if email and "@" not in email:
+                    logger.warning(f"Invalid email '{email}' for {name}. Clearing.")
+                    email = ""
+                if phone and not re.search(r'\d', phone):
+                    logger.warning(f"Invalid phone '{phone}' for {name}. Clearing.")
+                    phone = ""
+
+                record = {
+                    "country": "UK",
+                    "university": profile_data.get("university", "").strip(),
+                    "department": profile_data.get("department", "").strip(),
+                    "name": name,
+                    "origin": (profile_data.get("origin") or "South Asian").strip() or "South Asian",
+                    "role": role,
+                    "email": email,
+                    "phone": phone or "NA",
+                    "profile_link": profile_url,
