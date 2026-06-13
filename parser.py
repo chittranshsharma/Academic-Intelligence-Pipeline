@@ -428,3 +428,37 @@ Combined Page Content (university profile + personal website):
                     page_text = (
                         page_text
                         + "\n\n=== PERSONAL WEBSITE CONTENT ===\n"
+                        + personal_site_text
+                    )
+                    logger.info(f"Enriched profile with personal website content from {personal_site_url}")
+
+                logger.info(f"[{idx+1}/{len(raw_data)}] LLM extracting: {profile_url} (name hint: '{url_name}')")
+                profile_data = await self._extract_profile_data(page_text, profile_url)
+
+                if not profile_data:
+                    logger.warning(f"Extraction returned nothing for {profile_url}. Skipping.")
+                    continue
+
+                name = profile_data.get("name", "").strip()
+                role = profile_data.get("role", "").strip()
+
+                # Double-check the actual extracted name against South Asian list
+                # (URL name might have been a false positive or page might have different name)
+                if name and not is_south_asian_name(name):
+                    logger.info(f"Excluded '{name}' — extracted name not South Asian.")
+                    skipped_not_south_asian += 1
+                    continue
+
+                # Validate role
+                if not role or not self._is_valid_role(role):
+                    logger.info(f"Skipped '{name}' — role '{role}' not a faculty role.")
+                    skipped_role += 1
+                    continue
+
+                if not name:
+                    logger.warning(f"No name found for {profile_url}. Skipping.")
+                    error_name = f"noname_{os.path.basename(html_file).replace('.html', '')}"
+                    await self._take_screenshot(html_file, error_name)
+                    continue
+
+                # Validate email and phone
