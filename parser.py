@@ -482,3 +482,22 @@ Combined Page Content (university profile + personal website):
                     "email": email,
                     "phone": phone or "NA",
                     "profile_link": profile_url,
+                    "research_interests": profile_data.get("research_interests", "").strip(),
+                    "summary": profile_data.get("summary", "").strip(),
+                    "confidence_score": "Name Matched + LLM Verified",
+                    "review_status": "Pending",
+                    "source_page": item.get("source_page"),
+                    "scraped_at": item.get("scraped_at")
+                }
+                cleaned_data.append(record)
+                logger.info(f"INCLUDED: {name} | {role} | {profile_data.get('university', '')} | Origin: {record['origin']}")
+
+            except Exception as e:
+                logger.error(f"Error processing {html_file}: {e}")
+                error_name = f"exception_{os.path.basename(html_file).replace('.html', '')}"
+                await self._take_screenshot(html_file, error_name)
+
+        with open(self.output_json, 'w', encoding='utf-8') as f:
+            json.dump(cleaned_data, f, indent=4)
+
+        logger.info("=" * 50)
