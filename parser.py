@@ -501,3 +501,17 @@ Combined Page Content (university profile + personal website):
             json.dump(cleaned_data, f, indent=4)
 
         logger.info("=" * 50)
+        logger.info(f"Parsing complete.")
+        logger.info(f"Total profiles scanned  : {len(raw_data)}")
+        logger.info(f"Skipped (not South Asian): {skipped_not_south_asian}")
+        logger.info(f"Skipped (role filtered)  : {skipped_role}")
+        logger.info(f"South Asian faculty kept : {len(cleaned_data)}")
+        logger.info(f"Saved to: {self.output_json}")
+        logger.info("=" * 50)
+        return self.output_json
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    parser = FacultyParser()
+    asyncio.run(parser.process())
