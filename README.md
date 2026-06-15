@@ -341,3 +341,25 @@ On parsing failures, a screenshot of the problematic HTML is automatically saved
 
 ## 🤝 Contributing
 
+Contributions are welcome. To add support for a new institution's URL pattern or extend the name classification dataset:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/add-institution-support`
+3. Make your changes and add tests where applicable
+4. Submit a Pull Request with a clear description
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Built with Python · Playwright · Local LLMs · Data Automation**
+
+*Architected for zero manual intervention. Designed for scale.*
+
+</div>
