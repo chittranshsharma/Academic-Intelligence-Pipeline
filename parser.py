@@ -191,6 +191,15 @@ def is_south_asian_name(full_name: str) -> bool:
 
 class FacultyParser:
     def __init__(self, input_json="raw_data.json", output_json="cleaned_data.json", screenshots_dir="screenshots", model_name="qwen3:14b"):
+        """
+        Initialize the FacultyParser.
+        
+        Args:
+            input_json (str): Path to raw scraped data JSON file.
+            output_json (str): Path where parsed and cleaned data will be saved.
+            screenshots_dir (str): Directory where error screenshots will be saved.
+            model_name (str): Name of the local LLM model (e.g., qwen2.5:14b, llama3, etc. via Ollama).
+        """
         self.input_json = input_json
         self.output_json = output_json
         self.screenshots_dir = screenshots_dir
