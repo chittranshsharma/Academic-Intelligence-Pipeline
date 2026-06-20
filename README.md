@@ -205,6 +205,7 @@ python main.py \
 | `--max-profiles` | `1000` | Hard cap on profiles to discover |
 | `--concurrency` | `10` | Parallel HTTPX download workers |
 | `--use-playwright-profiles` | `False` | Use Playwright (slower, more robust) for profile downloads |
+| `--model` | `qwen3:14b` | Model name for Ollama / Local LLM |
 
 ---
 
