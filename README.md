@@ -45,7 +45,7 @@ At its core, the system combines **Playwright-driven browser automation** for Ja
 │  │  CRAWLING   │───▶│  PARSING & LLM   │───▶│  EXPORT & REPORT  │  │
 │  │             │    │  CLASSIFICATION  │    │                    │  │
 │  │ Playwright  │    │ BeautifulSoup +  │    │  CSV / XLSX        │  │
-│  │ HTTPX       │    │ Local LLM (Qwen) │    │  Deduplication     │  │
+│  │ HTTPX       │    │ Local LLM (Any)  │    │  Deduplication     │  │
 │  │ Smart URL   │    │ Name Heuristics  │    │  Styled Reports    │  │
 │  │ Heuristics  │    │ Role Validation  │    │                    │  │
 │  └─────────────┘    └──────────────────┘    └────────────────────┘  │
@@ -67,7 +67,7 @@ The pipeline is broken into three clearly separated, independently testable phas
 ## ✨ Key Features
 
 ### 🤖 AI-Augmented Profile Extraction
-- Uses a **local LLM** (Qwen 3 14B via Ollama) to extract structured fields — name, role, email, department, research interests, origin — directly from raw HTML text
+- Uses any **local LLM** (e.g. Qwen, Llama via Ollama or custom local models) to extract structured fields — name, role, email, department, research interests, origin — directly from raw HTML text
 - Enforces a strict zero-hallucination prompt: the model is instructed to return only explicitly stated information
 - **JSON-mode output** with robust multi-strategy parsing fallback for malformed LLM responses
 
