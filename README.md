@@ -127,8 +127,8 @@ academic-intelligence-pipeline/
 | Requirement | Version |
 |-------------|---------|
 | Python | 3.11+ |
-| [Ollama](https://ollama.ai) | Latest |
-| Qwen3:14b model | via Ollama |
+| [Ollama](https://ollama.ai) | Latest (or custom OpenAI API endpoints) |
+| Local LLM Model | e.g. Qwen, Llama, Mistral (run locally via Ollama) |
 | Chromium (for Playwright) | Auto-installed |
 
 ### 1. Clone the repository
@@ -157,11 +157,11 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 4. Start Ollama and pull the LLM model
+### 4. Start Ollama and pull your LLM model of choice
 
 ```bash
-# Install Ollama from https://ollama.ai, then:
-ollama pull qwen3:14b
+# Install Ollama from https://ollama.ai, then run your preferred model:
+ollama pull qwen3:14b  # Or any other model like llama3, mistral, etc.
 ollama serve
 ```
 
@@ -276,7 +276,7 @@ df = df.drop_duplicates(subset=["profile_link"], keep="first")
 | Browser Automation | Playwright (async, headless Chromium) |
 | HTTP Client | HTTPX (async, connection pooling) |
 | HTML Parsing | BeautifulSoup4 |
-| LLM Backend | Ollama (local) — Qwen3:14b |
+| LLM Backend | Ollama (local) — Any model (Qwen, Llama, etc.) |
 | LLM Client | OpenAI-compatible Python SDK |
 | Data Processing | Pandas |
 | Report Export | openpyxl (styled XLSX) |
@@ -291,7 +291,7 @@ df = df.drop_duplicates(subset=["profile_link"], keep="first")
 |--------|---------------|
 | Directory pages crawled/min | ~30–60 (network-dependent) |
 | Profile downloads (HTTPX, 10 workers) | ~80–120 profiles/min |
-| LLM extraction time per profile | ~2–5s (Qwen3:14b on CPU/GPU) |
+| LLM extraction time per profile | ~2–5s (depending on LLM size & hardware) |
 | Deduplication overhead | Negligible (<1s for 10k records) |
 | End-to-end for 500 profiles | ~15–30 minutes |
 
