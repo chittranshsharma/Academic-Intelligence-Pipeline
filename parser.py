@@ -190,7 +190,7 @@ def is_south_asian_name(full_name: str) -> bool:
 
 
 class FacultyParser:
-    def __init__(self, input_json="raw_data.json", output_json="cleaned_data.json", screenshots_dir="screenshots"):
+    def __init__(self, input_json="raw_data.json", output_json="cleaned_data.json", screenshots_dir="screenshots", model_name="qwen3:14b"):
         self.input_json = input_json
         self.output_json = output_json
         self.screenshots_dir = screenshots_dir
@@ -200,7 +200,7 @@ class FacultyParser:
             base_url="http://localhost:11434/v1",
             api_key="ollama"
         )
-        self.model_name = "qwen3:14b"
+        self.model_name = model_name
 
     def _is_valid_role(self, role: str) -> bool:
         if not role:

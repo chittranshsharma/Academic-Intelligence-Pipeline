@@ -29,6 +29,7 @@ async def main():
     parser.add_argument("--max-profiles", type=int, default=1000, help="Maximum number of profiles to scrape")
     parser.add_argument("--concurrency", type=int, default=10, help="Number of concurrent profile downloads using HTTPX")
     parser.add_argument("--use-playwright-profiles", action="store_true", help="Use Playwright to download profile pages instead of fast HTTPX")
+    parser.add_argument("--model", default="qwen3:14b", help="Model name for Ollama / Local LLM")
     
     args = parser.parse_args()
     
@@ -61,7 +62,12 @@ async def main():
     
     # 2. Parse
     logger.info("--- PHASE 2: PARSING & FILTERING ---")
-    fparser = FacultyParser(input_json="raw_data.json", output_json="cleaned_data.json", screenshots_dir="screenshots")
+    fparser = FacultyParser(
+        input_json="raw_data.json", 
+        output_json="cleaned_data.json", 
+        screenshots_dir="screenshots",
+        model_name=args.model
+    )
     await fparser.process()
     
     # 3. Export
