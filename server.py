@@ -162,6 +162,78 @@ async def _fetch_page(
                 raise
     raise last_exc
 
+
+async def _fetch_page_js(url: str, wait_extra_ms: int = 2500) -> str:
+    """
+    Fetch a JavaScript-rendered page using a headless Chromium browser (Playwright).
+    Used automatically when httpx returns a page with no profile links (SPA detection).
+
+    Mimics a real browser session: full viewport, realistic UA, waits for network idle
+    then an extra delay to let React/Vue/Angular finish rendering.
+    """
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        raise RuntimeError(
+            "Playwright not installed. Run: pip install playwright && playwright install chromium"
+        )
+
+    logger.info(f"[Playwright] Launching headless Chromium for: {url}")
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-blink-features=AutomationControlled",
+            ],
+        )
+        context = await browser.new_context(
+            user_agent=random.choice(_UA_POOL),
+            viewport={"width": 1440, "height": 900},
+            locale="en-US",
+            java_script_enabled=True,
+            # Mask automation fingerprint
+            extra_http_headers={
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+        )
+
+        # Remove the webdriver property that sites use to detect bots
+        await context.add_init_script(
+            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        )
+
+        page = await context.new_page()
+        try:
+            await page.goto(url, wait_until="networkidle", timeout=45_000)
+            # Extra wait for lazy-loaded / paginated content
+            await page.wait_for_timeout(wait_extra_ms)
+            html = await page.content()
+        finally:
+            await browser.close()
+
+    logger.info(f"[Playwright] Got {len(html)} bytes from {url}")
+    return html
+
+
+def _looks_like_js_page(html: str) -> bool:
+    """
+    Heuristic: returns True if the page is likely a JS SPA that rendered no useful content.
+    Checks for very low anchor-tag count + React/Vue/Angular script fingerprints.
+    """
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    links = soup.find_all("a", href=True)
+    scripts = soup.find_all("script", src=True)
+    script_text = " ".join(s.get("src", "") for s in scripts).lower()
+    # Signs of a JS-heavy SPA
+    is_spa = any(k in script_text for k in ("react", "vue", "angular", "next", "nuxt", "chunk", "bundle"))
+    return len(links) < 15 or is_spa
+
+
 # ── Parser Singleton ─────────────────────────────────────────────────────────
 groq_api_key = os.environ.get("GROQ_API_KEY", "")
 if not groq_api_key:
@@ -350,12 +422,9 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
             visited_pages: set[str] = set()
             current_page_url = req.url
             page_num = 0
+            use_playwright = False   # auto-set to True if SPA detected
 
-            # Headers are now rotated per-request via _make_headers() inside _fetch_page()
-
-            async with httpx.AsyncClient(
-                follow_redirects=True, timeout=25.0
-            ) as client:
+            async with httpx.AsyncClient(follow_redirects=True, timeout=25.0) as client:
 
                 while current_page_url and page_num < req.max_pages:
                     if current_page_url in visited_pages:
@@ -363,18 +432,48 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
                     visited_pages.add(current_page_url)
                     page_num += 1
 
+                    # ── Fetch the directory page ─────────────────────────────
                     try:
-                        html = await _fetch_page(client, current_page_url)
+                        if use_playwright:
+                            html = await _fetch_page_js(current_page_url)
+                        else:
+                            html = await _fetch_page(client, current_page_url)
                     except Exception as e:
                         yield sse({"type": "error", "message": f"Failed to fetch page {page_num}: {e}"})
                         break
 
-                    # Extract profile links from this directory page
+                    # ── Auto-detect JS-rendered SPA on first page ────────────
                     page_profiles = _extract_profile_links(html, current_page_url)
-                    new_profiles = [
-                        u for u in page_profiles
-                        if u not in all_profile_urls
-                    ]
+                    if not page_profiles and page_num == 1 and not use_playwright:
+                        js_hint = _looks_like_js_page(html)
+                        yield sse({
+                            "type": "info",
+                            "message": (
+                                "🤖 Detected JavaScript-rendered page"
+                                + (" (React/Vue/Angular SPA)" if js_hint else "")
+                                + " — switching to headless Chromium (Playwright). "
+                                "This may take 10-20s per page…"
+                            ),
+                        })
+                        try:
+                            html = await _fetch_page_js(current_page_url)
+                            page_profiles = _extract_profile_links(html, current_page_url)
+                            use_playwright = True
+                            yield sse({"type": "mode", "engine": "playwright"})
+                        except Exception as pw_err:
+                            yield sse({
+                                "type": "error",
+                                "message": (
+                                    f"Headless browser failed: {pw_err}\n"
+                                    "Make sure Playwright is installed: "
+                                    "pip install playwright && playwright install chromium"
+                                ),
+                            })
+                            return
+                    elif page_num == 1:
+                        yield sse({"type": "mode", "engine": "httpx"})
+
+                    new_profiles = [u for u in page_profiles if u not in all_profile_urls]
                     all_profile_urls.extend(new_profiles)
 
                     yield sse({
@@ -392,23 +491,22 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
                     # Find next page
                     next_url = _find_next_page(html, current_page_url)
                     if not next_url:
-                        break  # End of pagination
+                        break
                     current_page_url = next_url
-                    await asyncio.sleep(random.uniform(0.8, 2.0))  # Polite delay + randomisation
+                    # Longer polite delay for headless browser (heavier)
+                    await asyncio.sleep(random.uniform(2.5, 4.0) if use_playwright else random.uniform(0.8, 2.0))
 
             if not all_profile_urls:
-                hint = (
-                    "No profile links found. Two common causes:\n"
-                    "1. JAVASCRIPT-RENDERED PAGE: Sites like Harvard SEAS, MIT, Stanford load "
-                    "faculty lists via JavaScript/React. The server can only read static HTML. "
-                    "Fix: Use the static/HTML version of the directory (look for a 'View All' "
-                    "plain-HTML page, or use Google to find: site:seas.harvard.edu/people/faculty)\n"
-                    "2. WRONG URL TYPE: You may have pasted an individual profile URL instead of a "
-                    "directory listing page.\n"
-                    "Try a URL like: https://www.ece.uw.edu/people/faculty/ or "
-                    "https://www.cs.utexas.edu/people/faculty-researchers"
-                )
-                yield sse({"type": "error", "message": hint})
+                yield sse({
+                    "type": "error",
+                    "message": (
+                        "No profile links found even after trying headless browser.\n"
+                        "The site may require login, use non-standard URL patterns, "
+                        "or the profile links use paths not in our heuristic list.\n"
+                        "Try: https://www.ece.uw.edu/people/faculty/ or "
+                        "https://www.cs.ubc.ca/people/faculty (these are static HTML)"
+                    ),
+                })
                 return
 
 
@@ -671,7 +769,7 @@ def _get_record_count() -> int:
 
 
 def _is_likely_profile_link(url: str, base_url: str) -> bool:
-    """Mirror of crawler.py's heuristic — kept here so server has no import dep on crawler."""
+    """Heuristic to decide if a link is an individual faculty profile page."""
     try:
         parsed = urlparse(url)
         parsed_base = urlparse(base_url)
@@ -681,13 +779,39 @@ def _is_likely_profile_link(url: str, base_url: str) -> bool:
         parts = [p for p in path.split("/") if p]
         if not parts:
             return False
-        for kw in ["people", "profile", "staff", "faculty", "expert", "member", "academics", "researchers"]:
+
+        # Expanded keyword list covering Harvard /person/, MIT /bio/, etc.
+        PROFILE_KEYWORDS = {
+            "people", "profile", "profiles", "staff", "faculty", "expert", "experts",
+            "member", "members", "academics", "researchers", "researcher",
+            "person",        # Harvard SEAS: /person/<name>
+            "bio",           # MIT, Caltech: /bio/<name>
+            "directory",     # Some UK universities
+            "team",          # /team/<name>
+            "our-team",
+            "professors",
+            "lecturer",
+            "instructor",
+        }
+        BLACKLIST_SUFFIXES = {
+            "index.html", "index.php", "index.htm",
+            "search", "all", "list", "listing", "listings",
+            "page", "filter", "results", "browse",
+        }
+
+        for kw in PROFILE_KEYWORDS:
             if kw in parts:
                 idx = parts.index(kw)
                 if idx < len(parts) - 1:
                     after_kw = parts[idx + 1]
-                    if after_kw not in ["index.html", "index.php", "search", "all", "list"]:
+                    if after_kw not in BLACKLIST_SUFFIXES:
                         return True
+
+        # Also catch pattern where the keyword IS the last segment but there's a slug after it
+        # e.g. /faculty/priya-nair  where faculty is parts[-2] and priya-nair is parts[-1]
+        if len(parts) >= 2 and parts[-2] in PROFILE_KEYWORDS and parts[-1] not in BLACKLIST_SUFFIXES:
+            return True
+
         return False
     except Exception:
         return False

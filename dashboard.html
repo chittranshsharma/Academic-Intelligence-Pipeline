@@ -593,6 +593,12 @@ function stopScrapeUI(){
 
 function handleSSE(ev){
   if(ev.type==='start'){document.getElementById('progressLabel').textContent='Discovering profiles...';addFeed('page','\ud83d\udd0d Start: '+ev.url);}
+  else if(ev.type==='info'){addFeed('mode_switch','\ud83e\udd16 '+e(ev.message));}
+  else if(ev.type==='mode'){
+    const isPlay=ev.engine==='playwright';
+    const badge=isPlay?'<span style="background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3);padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">PLAYWRIGHT</span>':'<span style="background:rgba(37,99,235,.1);color:#60a5fa;border:1px solid rgba(37,99,235,.3);padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">HTTPX</span>';
+    addFeed('page','\u26a1 Engine: '+badge+(isPlay?' (Headless Chromium \u2014 JS pages supported)':' (Fast static fetch)'));
+  }
   else if(ev.type==='page'){document.getElementById('progTotal').textContent=ev.total_profiles;addFeed('page','\ud83d\udcc4 Page '+ev.page+' \u2014 found '+ev.profiles_found+' links, total: '+ev.total_profiles);}
   else if(ev.type==='progress'){
     const idx=ev.index||0,tot=ev.total||0,pct=tot>0?Math.round(idx/tot*100):0;
@@ -618,8 +624,9 @@ function handleSSE(ev){
     toast('\u2705 '+ev.saved+' faculty saved from '+ev.pages_crawled+' pages','success');
     stopScrapeUI();ping();
   }
-  else if(ev.type==='error'){addFeed('error','\u274c '+e(ev.message));showAlert('scrapeAlert','\u274c '+e(ev.message),'error');stopScrapeUI();}
+  else if(ev.type==='error'){addFeed('error','\u274c '+e(ev.message));showAlert('scrapeAlert','\u274c <pre style="white-space:pre-wrap;font-size:11px;margin-top:6px;">'+e(ev.message)+'</pre>','error');stopScrapeUI();}
 }
+
 
 function addFeed(type,html){
   const feed=document.getElementById('liveFeed');
