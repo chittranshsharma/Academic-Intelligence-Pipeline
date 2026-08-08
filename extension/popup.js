@@ -30,6 +30,16 @@ const resultTitle   = document.getElementById("resultTitle");
 const resultBadge   = document.getElementById("resultBadge");
 const resultBody    = document.getElementById("resultBody");
 
+// API Key Card refs
+const apiKeyCard          = document.getElementById("apiKeyCard");
+const apiKeyHeader        = document.getElementById("apiKeyHeader");
+const apiKeyBadge         = document.getElementById("apiKeyBadge");
+const apiKeyChevron       = document.getElementById("apiKeyChevron");
+const apiKeyBody          = document.getElementById("apiKeyBody");
+const groqApiKeyInput     = document.getElementById("groqApiKeyInput");
+const toggleKeyVisibility = document.getElementById("toggleKeyVisibility");
+const saveApiKeyBtn       = document.getElementById("saveApiKeyBtn");
+
 // Directory mode
 const dirScrapeBtn     = document.getElementById("dirScrapeBtn");
 const dirScrapeIcon    = document.getElementById("dirScrapeIcon");
@@ -54,9 +64,102 @@ let bgPort        = null;   // Port to background service worker
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
+  await initApiKey();
   await Promise.all([checkServerStatus(), loadCurrentTab()]);
   await restoreProgressFromStorage(); // Show any ongoing/completed scrape
 })();
+
+// ── API Key Management ────────────────────────────────────────────────────────
+async function initApiKey() {
+  // Header collapse toggle
+  apiKeyHeader.addEventListener("click", () => {
+    const isHidden = apiKeyBody.classList.toggle("hidden");
+    apiKeyChevron.classList.toggle("open", !isHidden);
+  });
+
+  // Password visibility toggle
+  toggleKeyVisibility.addEventListener("click", (e) => {
+    e.stopPropagation();
+    groqApiKeyInput.type = groqApiKeyInput.type === "password" ? "text" : "password";
+  });
+
+  // Save Key handler
+  saveApiKeyBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const keyVal = groqApiKeyInput.value.trim();
+    if (!keyVal) {
+      showToast("Please paste a valid Groq API key", "error");
+      return;
+    }
+    await saveApiKey(keyVal);
+  });
+
+  // Load key from storage
+  const stored = await chrome.storage.local.get("groqApiKey");
+  if (stored.groqApiKey) {
+    groqApiKeyInput.value = stored.groqApiKey;
+    await sendApiKeyToServer(stored.groqApiKey, false);
+  }
+}
+
+async function saveApiKey(keyVal) {
+  saveApiKeyBtn.disabled = true;
+  saveApiKeyBtn.textContent = "Saving…";
+  try {
+    await chrome.storage.local.set({ groqApiKey: keyVal });
+    const ok = await sendApiKeyToServer(keyVal, true);
+    if (ok) {
+      setTimeout(() => {
+        apiKeyBody.classList.add("hidden");
+        apiKeyChevron.classList.remove("open");
+      }, 1500);
+    }
+  } finally {
+    saveApiKeyBtn.disabled = false;
+    saveApiKeyBtn.textContent = "Save Key";
+  }
+}
+
+async function sendApiKeyToServer(keyVal, showToastOnSuccess = true) {
+  try {
+    const resp = await fetch(`${SERVER}/set-api-key`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groq_api_key: keyVal }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      updateApiKeyStatusUI(true, data.api_key_masked);
+      hideError();
+      if (serverOnline) {
+        scrapeBtn.disabled    = false;
+        dirScrapeBtn.disabled = false;
+      }
+      if (showToastOnSuccess) showToast("✓ Groq API Key updated!", "success");
+      return true;
+    } else {
+      const err = await resp.json().catch(() => ({ detail: "Failed to update key" }));
+      if (showToastOnSuccess) showToast(`Key error: ${err.detail}`, "error");
+      return false;
+    }
+  } catch {
+    return false;
+  }
+}
+
+function updateApiKeyStatusUI(keySet, maskedKey) {
+  if (keySet) {
+    apiKeyBadge.className = "api-key-badge set";
+    apiKeyBadge.textContent = maskedKey ? `✓ ${maskedKey}` : "✓ Key Set";
+    apiKeyCard.classList.remove("warning");
+  } else {
+    apiKeyBadge.className = "api-key-badge unset";
+    apiKeyBadge.textContent = "⚠ Key Required";
+    apiKeyCard.classList.add("warning");
+    apiKeyBody.classList.remove("hidden");
+    apiKeyChevron.classList.add("open");
+  }
+}
 
 // ── Mode switching ────────────────────────────────────────────────────────────
 function switchMode(mode) {
@@ -76,7 +179,18 @@ async function checkServerStatus() {
       statusDot.className    = "status-dot online";
       statusText.textContent = "Connected";
       statCount.textContent  = data.record_count ?? "0";
-      if (!data.api_key_set) showError("⚠ GROQ_API_KEY not set. Add it to .env and restart server.py");
+
+      updateApiKeyStatusUI(data.api_key_set, data.api_key_masked);
+
+      if (!data.api_key_set) {
+        showError("⚠ GROQ_API_KEY required. Paste your Groq API key above.");
+        scrapeBtn.disabled    = true;
+        dirScrapeBtn.disabled = true;
+      } else {
+        hideError();
+        scrapeBtn.disabled    = false;
+        dirScrapeBtn.disabled = false;
+      }
     } else { throw new Error(); }
   } catch {
     serverOnline = false;
@@ -160,9 +274,13 @@ scrapeBtn.addEventListener("click", async () => {
     if (!pageHtml) throw new Error("Got empty HTML. Try refreshing the page.");
     if (pageHtml.length > 2_000_000) pageHtml = pageHtml.slice(0, 2_000_000);
 
+    const stored = await chrome.storage.local.get("groqApiKey");
+    const payload = { html: pageHtml, url: pageUrl };
+    if (stored.groqApiKey) payload.groq_api_key = stored.groqApiKey;
+
     const resp = await fetch(`${SERVER}/classify`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html: pageHtml, url: pageUrl }),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(60_000),
     });
 

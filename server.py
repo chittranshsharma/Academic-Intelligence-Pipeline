@@ -87,7 +87,7 @@ _parser: Optional[FacultyParser] = None
 
 def get_parser() -> FacultyParser:
     """Return (or lazily create) the shared FacultyParser instance."""
-    global _parser
+    global _parser, groq_api_key
     if _parser is None:
         _parser = FacultyParser(
             model_name=DEFAULT_MODEL,
@@ -96,10 +96,50 @@ def get_parser() -> FacultyParser:
     return _parser
 
 
+def update_api_key(new_key: str):
+    """Dynamically update the active GROQ_API_KEY and re-initialize FacultyParser."""
+    global groq_api_key, _parser
+    groq_api_key = new_key.strip()
+    _parser = FacultyParser(
+        model_name=DEFAULT_MODEL,
+        groq_api_key=groq_api_key,
+    )
+    logger.info(f"GROQ_API_KEY dynamically updated (key: {groq_api_key[:4]}...{groq_api_key[-4:] if len(groq_api_key) > 8 else '***'})")
+
+    # Persist to .env file so server restarts retain the updated key
+    try:
+        env_path = ".env"
+        env_lines = []
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                env_lines = f.readlines()
+
+        key_found = False
+        new_lines = []
+        for line in env_lines:
+            if line.startswith("GROQ_API_KEY="):
+                new_lines.append(f"GROQ_API_KEY={groq_api_key}\n")
+                key_found = True
+            else:
+                new_lines.append(line)
+        if not key_found:
+            new_lines.append(f"\nGROQ_API_KEY={groq_api_key}\n")
+
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+    except Exception as e:
+        logger.warning(f"Could not persist GROQ_API_KEY to .env: {e}")
+
+
 # ── Request / Response Models ─────────────────────────────────────────────────
+class ApiKeyRequest(BaseModel):
+    groq_api_key: str
+
+
 class ClassifyRequest(BaseModel):
     html: str
     url: str
+    groq_api_key: Optional[str] = None
 
 
 class ScrapeDirectoryRequest(BaseModel):
@@ -107,6 +147,7 @@ class ScrapeDirectoryRequest(BaseModel):
     max_pages: int = 100         # Max pagination pages to follow
     max_profiles: int = 1000     # Hard cap on profiles to process
     concurrency: int = 5         # Parallel Groq calls per batch
+    groq_api_key: Optional[str] = None
 
 
 class SaveRequest(BaseModel):
@@ -117,13 +158,33 @@ class SaveRequest(BaseModel):
 
 @app.get("/status")
 async def status():
-    """Health check — extension polls this to show connection indicator."""
+    """Health check — extension polls this to show connection indicator and key status."""
+    masked_key = ""
+    if groq_api_key:
+        masked_key = f"{groq_api_key[:4]}...{groq_api_key[-4:]}" if len(groq_api_key) > 8 else "***"
     return {
         "status": "running",
         "model": DEFAULT_MODEL,
         "api_key_set": bool(groq_api_key),
+        "api_key_masked": masked_key,
         "data_file": DATA_FILE,
         "record_count": _get_record_count(),
+    }
+
+
+@app.post("/set-api-key")
+async def set_api_key(req: ApiKeyRequest):
+    """Dynamically upload/update Groq API key from browser extension."""
+    if not req.groq_api_key or not req.groq_api_key.strip():
+        raise HTTPException(status_code=400, detail="API key cannot be empty.")
+
+    update_api_key(req.groq_api_key)
+    masked = f"{groq_api_key[:4]}...{groq_api_key[-4:]}" if len(groq_api_key) > 8 else "***"
+    return {
+        "status": "updated",
+        "api_key_set": True,
+        "api_key_masked": masked,
+        "message": "Groq API key updated successfully."
     }
 
 
@@ -131,13 +192,16 @@ async def status():
 async def classify(req: ClassifyRequest):
     """
     Classify a faculty profile page.
-    Accepts: {html: str, url: str}
+    Accepts: {html: str, url: str, groq_api_key: optional str}
     Returns: structured profile dict with is_south_asian, is_valid_role, etc.
     """
+    if req.groq_api_key and req.groq_api_key.strip():
+        update_api_key(req.groq_api_key)
+
     if not groq_api_key:
         raise HTTPException(
             status_code=503,
-            detail="GROQ_API_KEY not configured. Add it to your .env file and restart the server.",
+            detail="GROQ_API_KEY not configured. Please paste your Groq API Key in the extension popup.",
         )
 
     if not req.html or not req.url:
@@ -178,10 +242,13 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
         {"type": "done",     "pages": int, "profiles": int, "saved": int, "skipped": int}
         {"type": "error",    "message": str}
     """
+    if req.groq_api_key and req.groq_api_key.strip():
+        update_api_key(req.groq_api_key)
+
     if not groq_api_key:
         raise HTTPException(
             status_code=503,
-            detail="GROQ_API_KEY not configured. Add it to your .env file and restart the server.",
+            detail="GROQ_API_KEY not configured. Please paste your Groq API Key in the extension popup.",
         )
 
     async def event_stream() -> AsyncGenerator[str, None]:

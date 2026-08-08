@@ -102,6 +102,12 @@ async function runDirectoryScrape(config, port) {
     startedAt: Date.now(),
   });
 
+  // Attach stored Groq API Key if present
+  const stored = await chrome.storage.local.get("groqApiKey");
+  if (stored.groqApiKey) {
+    config.groq_api_key = stored.groqApiKey;
+  }
+
   try {
     const resp = await fetch(`${SERVER}/scrape-directory`, {
       method:  "POST",

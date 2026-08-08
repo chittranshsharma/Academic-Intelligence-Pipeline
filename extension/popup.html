@@ -307,7 +307,52 @@
       transition: background var(--transition);
       display: flex; align-items: center; gap: 5px;
     }
-    .btn-export:hover { background: rgba(37,99,235,.1); }
+    /* ── API Key Card ─────────────────────────────────────────────── */
+    .api-key-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); margin-bottom: 12px;
+      overflow: hidden; transition: border-color var(--transition);
+    }
+    .api-key-card.warning { border-color: var(--amber); }
+    .api-key-header {
+      padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none; transition: background var(--transition);
+    }
+    .api-key-header:hover { background: rgba(255,255,255,0.03); }
+    .api-key-title-wrap { display: flex; align-items: center; gap: 8px; }
+    .api-key-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .api-key-badge {
+      font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px;
+    }
+    .api-key-badge.set { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+    .api-key-badge.unset { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+    .api-key-chevron { font-size: 10px; color: var(--text-muted); transition: transform var(--transition); }
+    .api-key-chevron.open { transform: rotate(180deg); }
+
+    .api-key-body { padding: 8px 12px 10px; border-top: 1px solid var(--border); }
+    .api-key-input-wrap { display: flex; gap: 6px; margin-top: 4px; align-items: center; }
+    .api-key-input-wrap input {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 6px 10px;
+      color: var(--text); font-size: 11px; font-family: monospace; outline: none;
+    }
+    .api-key-input-wrap input:focus { border-color: var(--purple); }
+    .btn-icon {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-muted);
+      padding: 5px 8px; cursor: pointer; font-size: 11px;
+    }
+    .btn-icon:hover { color: var(--text); border-color: var(--text-dim); }
+    .btn-save-key {
+      padding: 6px 12px; background: var(--purple); border: none;
+      border-radius: var(--radius-sm); color: #fff; font-size: 11px;
+      font-weight: 700; cursor: pointer; transition: opacity var(--transition);
+      white-space: nowrap;
+    }
+    .btn-save-key:hover { opacity: 0.9; }
+    .api-key-help { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+    .api-key-help a { color: #60a5fa; text-decoration: none; }
+    .api-key-help a:hover { text-decoration: underline; }
 
     .hidden { display: none !important; }
   </style>
@@ -343,6 +388,28 @@
       <div class="stat-card">
         <div class="stat-value" id="statModel">Groq</div>
         <div class="stat-label">AI Backend</div>
+      </div>
+    </div>
+
+    <!-- Groq API Key Config Card -->
+    <div class="api-key-card" id="apiKeyCard">
+      <div class="api-key-header" id="apiKeyHeader">
+        <div class="api-key-title-wrap">
+          <span style="font-size:12px;">🔑</span>
+          <span class="api-key-title">Groq API Key</span>
+          <span class="api-key-badge unset" id="apiKeyBadge">Checking…</span>
+        </div>
+        <span class="api-key-chevron" id="apiKeyChevron">▼</span>
+      </div>
+      <div class="api-key-body hidden" id="apiKeyBody">
+        <div class="api-key-input-wrap">
+          <input type="password" id="groqApiKeyInput" placeholder="Paste gsk_... key here" autocomplete="off" spellcheck="false" />
+          <button class="btn-icon" id="toggleKeyVisibility" title="Toggle Visibility">👁</button>
+          <button class="btn-save-key" id="saveApiKeyBtn">Save Key</button>
+        </div>
+        <div class="api-key-help">
+          Need a key? <a href="https://console.groq.com/keys" target="_blank">Get a free Groq API key</a>
+        </div>
       </div>
     </div>
 
