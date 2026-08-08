@@ -67,6 +67,34 @@ let bgPort        = null;   // Port to background service worker
   await initApiKey();
   await Promise.all([checkServerStatus(), loadCurrentTab()]);
   await restoreProgressFromStorage(); // Show any ongoing/completed scrape
+
+  // Attach tab-switch listeners (inline onclick blocked by extension CSP)
+  document.getElementById("tabSingle")?.addEventListener("click", () => switchMode("single"));
+  document.getElementById("tabDirectory")?.addEventListener("click", () => switchMode("directory"));
+
+  // Dashboard launcher: open the full web UI in a new tab, relay current URL via localStorage
+  document.getElementById("openDashboardBtn")?.addEventListener("click", async () => {
+    try {
+      // Store current tab URL so dashboard can pick it up
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tabUrl = tabs[0]?.url || "";
+      // Open dashboard URL in new tab first
+      const dashTab = await chrome.tabs.create({ url: "http://localhost:8765/dashboard" });
+      // Inject a small script to write the URL to localStorage on the dashboard page
+      if (tabUrl && dashTab?.id) {
+        // Wait briefly then inject
+        setTimeout(() => {
+          chrome.scripting.executeScript({
+            target: { tabId: dashTab.id },
+            func: (url, key) => { localStorage.setItem(key, url); },
+            args: [tabUrl, "fi_current_tab"],
+          }).catch(() => {}); // ignore if page not ready yet
+        }, 1500);
+      }
+    } catch (err) {
+      console.warn("Could not open dashboard:", err);
+    }
+  });
 })();
 
 // ── API Key Management ────────────────────────────────────────────────────────
@@ -163,10 +191,10 @@ function updateApiKeyStatusUI(keySet, maskedKey) {
 
 // ── Mode switching ────────────────────────────────────────────────────────────
 function switchMode(mode) {
-  document.getElementById("tabSingle").classList.toggle("active",    mode === "single");
-  document.getElementById("tabDirectory").classList.toggle("active", mode === "directory");
-  document.getElementById("modeSingle").classList.toggle("hidden",    mode !== "single");
-  document.getElementById("modeDirectory").classList.toggle("hidden", mode !== "directory");
+  document.getElementById("tabSingle")?.classList.toggle("active",    mode === "single");
+  document.getElementById("tabDirectory")?.classList.toggle("active", mode === "directory");
+  document.getElementById("modeSingle")?.classList.toggle("hidden",    mode !== "single");
+  document.getElementById("modeDirectory")?.classList.toggle("hidden", mode !== "directory");
 }
 
 // ── Server health ─────────────────────────────────────────────────────────────

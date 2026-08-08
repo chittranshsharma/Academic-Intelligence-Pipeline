@@ -1,0 +1,726 @@
+#!/usr/bin/env python3
+"""
+Writes the Faculty Intelligence dashboard.html file.
+Run: python write_dashboard.py
+"""
+import os
+
+DASHBOARD_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Faculty Intelligence - Dashboard</title>
+  <meta name="description" content="Faculty Intelligence Dashboard - AI-powered South Asian faculty classifier using Groq LLM"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c12;--bg-card:#0f1520;--bg-card2:#151d2b;--bg-card3:#1b2438;
+  --border:#1e2d42;--border-light:#253347;
+  --purple:#7c3aed;--purple-glow:rgba(124,58,237,0.15);
+  --blue:#2563eb;--blue-soft:#60a5fa;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --text:#e2eaf4;--text-muted:#7a90aa;--text-dim:#3d5068;
+  --grad:linear-gradient(135deg,#7c3aed 0%,#2563eb 100%);
+  --grad-green:linear-gradient(135deg,#16a34a 0%,#22c55e 100%);
+  --radius:12px;--radius-sm:8px;--radius-xs:5px;
+  --transition:0.18s ease;--shadow:0 4px 24px rgba(0,0,0,0.4)
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+.app{display:flex;min-height:100vh}
+/* sidebar */
+.sidebar{width:240px;min-height:100vh;background:var(--bg-card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.logo-icon{font-size:26px;margin-bottom:6px}
+.logo-title{font-size:15px;font-weight:800;letter-spacing:-.4px}
+.logo-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 10px}
+.nav-label{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;padding:8px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all var(--transition);user-select:none;margin-bottom:2px;border:1px solid transparent}
+.nav-item:hover{background:var(--bg-card2);color:var(--text)}
+.nav-item.active{background:var(--purple-glow);color:var(--text);border-color:rgba(124,58,237,0.3)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border)}
+.server-status{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-card2);border:1px solid var(--border)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-dim);flex-shrink:0}
+.status-dot.online{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.status-dot.offline{background:var(--red);box-shadow:0 0 8px var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-info{flex:1;min-width:0}
+.status-label{font-size:11px;font-weight:600;color:var(--text)}
+.status-sub{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);position:sticky;top:0;z-index:10}
+.topbar-title{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.topbar-sub{font-size:12px;color:var(--text-muted);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+/* pages */
+.page{display:none;flex:1;padding:24px 28px}
+.page.active{display:block}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition);white-space:nowrap;font-family:inherit}
+.btn-primary{background:var(--grad);color:#fff}
+.btn-primary:hover:not(:disabled){opacity:.9;transform:translateY(-1px);box-shadow:0 4px 20px rgba(124,58,237,.4)}
+.btn-primary:active:not(:disabled){transform:translateY(0)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{background:var(--bg-card2);color:var(--text-muted);border:1px solid var(--border-light)}
+.btn-secondary:hover:not(:disabled){color:var(--text);border-color:var(--text-dim)}
+.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-success{background:var(--grad-green);color:#000;font-weight:700}
+.btn-success:hover:not(:disabled){opacity:.9}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-icon-only{padding:8px}
+/* cards */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card+.card{margin-top:16px}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg-card)}
+.card-title{font-size:13px;font-weight:700}
+.card-body{padding:20px}
+/* form */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+.field-input{width:100%;background:var(--bg);border:1px solid var(--border-light);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color var(--transition);font-family:inherit}
+.field-input:focus{border-color:var(--purple)}
+.field-input::placeholder{color:var(--text-dim)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-hint{font-size:11px;color:var(--text-dim);margin-top:4px}
+/* progress */
+.progress-stats-row{display:flex;gap:20px}
+.pstat-val{font-size:16px;font-weight:700}
+.pstat-val.green{color:var(--green)}
+.pstat-val.blue{color:var(--blue-soft)}
+.pstat-val.amber{color:var(--amber)}
+.pstat-lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
+.progress-bar-track{background:var(--bg-card2);border-radius:4px;height:5px;overflow:hidden;margin:10px 0 4px;border:1px solid var(--border)}
+.progress-bar-fill{height:100%;background:var(--grad);border-radius:4px;transition:width .4s ease;width:0%}
+.progress-pct{font-size:11px;color:var(--text-dim);text-align:right}
+/* live feed */
+.live-feed-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-top:12px}
+.live-feed-header{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.live-feed-title{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.live-feed-log{max-height:280px;overflow-y:auto;padding:8px 6px;font-family:'JetBrains Mono',monospace;font-size:11px}
+.feed-row{display:flex;align-items:flex-start;gap:8px;padding:4px 8px;border-radius:4px;animation:fadeUp .15s ease}
+.feed-row:hover{background:var(--bg-card2)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.feed-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.feed-dot.included{background:var(--green)}
+.feed-dot.excluded,.feed-dot.duplicate{background:var(--text-dim)}
+.feed-dot.not_faculty{background:var(--amber)}
+.feed-dot.error{background:var(--red)}
+.feed-dot.page,.feed-dot.done{background:var(--blue-soft)}
+.feed-dot.done{background:var(--green)}
+.feed-text{flex:1;color:var(--text-muted);line-height:1.5;word-break:break-all}
+.feed-text .hi{color:var(--green);font-weight:600}
+/* table */
+.table-wrap{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{background:var(--bg-card2);color:var(--text-muted);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--transition)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg-card2)}
+tbody td{padding:10px 14px;color:var(--text);vertical-align:top;max-width:200px}
+.td-name{font-weight:600}
+.td-role{color:var(--text-muted);font-size:11.5px}
+.td-origin{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--purple-glow);color:#a78bfa;border:1px solid rgba(124,58,237,.3)}
+.td-link{color:var(--blue-soft);text-decoration:none;font-size:11px}
+.td-link:hover{text-decoration:underline}
+.td-email{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)}
+/* classify result */
+.classify-result{background:var(--bg-card2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:16px;animation:fadeUp .25s ease}
+.classify-result.included{border-color:rgba(34,197,94,.35)}
+.classify-result.excluded{border-color:rgba(239,68,68,.3)}
+.classify-result.partial{border-color:rgba(245,158,11,.3)}
+.result-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.result-badge.included{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.result-badge.excluded{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.result-badge.partial{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.result-name{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.result-role{font-size:13px;color:var(--text-muted);margin-top:3px;margin-bottom:14px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.rf-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:3px}
+.rf-value{font-size:13px;color:var(--text)}
+.rf-value.accent{color:#a78bfa;font-weight:600}
+.rf-value.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.result-reason{font-size:12px;color:var(--red);background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-xs);padding:10px 14px;margin-top:8px}
+.result-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+/* badges */
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px;display:inline-block}
+.badge-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.badge-blue{background:rgba(37,99,235,.12);color:var(--blue-soft);border:1px solid rgba(37,99,235,.3)}
+.badge-red{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.badge-amber{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+/* toast */
+.toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:1000}
+.toast{background:var(--bg-card2);border:1px solid var(--border-light);border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:500;color:var(--text);box-shadow:var(--shadow);min-width:220px;animation:slideIn .25s ease;display:flex;align-items:center;gap:8px}
+.toast.success{border-color:rgba(34,197,94,.4);color:var(--green)}
+.toast.error{border-color:rgba(239,68,68,.4);color:var(--red)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+/* spinner */
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;flex-shrink:0}
+.spinner.dark{border-color:rgba(0,0,0,.2);border-top-color:#000}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* empty */
+.empty-state{text-align:center;padding:60px 20px}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.empty-title{font-size:16px;font-weight:600;color:var(--text-muted);margin-bottom:6px}
+.empty-sub{font-size:13px;color:var(--text-dim)}
+/* alert */
+.alert{padding:12px 16px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:16px}
+.alert.error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+.alert.warn{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);color:var(--amber)}
+.alert.info{background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.25);color:var(--blue-soft)}
+.hidden{display:none!important}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:700px){
+  .sidebar{width:56px}
+  .logo-title,.logo-sub,.nav-item>*:not(.nav-icon),.status-info{display:none}
+  .nav-item{justify-content:center}
+  .page{padding:16px}
+  .topbar{padding:14px 16px}
+  .field-row,.result-grid{grid-template-columns:1fr}
+}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">&#127979;</div>
+      <div class="logo-title">Faculty Intelligence</div>
+      <div class="logo-sub">Groq AI &middot; llama-3.3-70b</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Pipeline</div>
+      <div class="nav-item active" id="navClassify" onclick="showPage('classify')"><span class="nav-icon">&#9889;</span> Classify Profile</div>
+      <div class="nav-item" id="navScrape" onclick="showPage('scrape')"><span class="nav-icon">&#128203;</span> Scrape Directory</div>
+      <div class="nav-label">Data</div>
+      <div class="nav-item" id="navRecords" onclick="showPage('records')"><span class="nav-icon">&#128452;</span> Records</div>
+      <div class="nav-item" id="navExport" onclick="showPage('export')"><span class="nav-icon">&#128202;</span> Export</div>
+      <div class="nav-label">Settings</div>
+      <div class="nav-item" id="navSettings" onclick="showPage('settings')"><span class="nav-icon">&#9881;</span> API Key</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="server-status">
+        <div class="status-dot" id="sidebarDot"></div>
+        <div class="status-info">
+          <div class="status-label" id="sidebarStatusLabel">Checking&hellip;</div>
+          <div class="status-sub" id="sidebarStatusSub">localhost:8765</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbarTitle">Classify Profile</div>
+        <div class="topbar-sub" id="topbarSub">Fetch and classify a faculty profile URL using Groq AI</div>
+      </div>
+      <div class="topbar-right">
+        <span id="topbarBadge" class="badge badge-blue" style="font-size:12px;"></span>
+        <button class="btn btn-secondary btn-sm" onclick="refreshAll()">&#8635; Refresh</button>
+      </div>
+    </div>
+
+    <!-- PAGE: Classify -->
+    <div class="page active" id="pageClassify">
+      <div id="classifyApiWarn" class="alert warn hidden">&#9888; Groq API Key not set &mdash; go to <strong>API Key</strong> settings to activate AI classification.</div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">&#9889; Classify a Faculty Profile</span></div>
+        <div class="card-body">
+          <div class="field">
+            <label class="field-label" for="classifyUrl">Profile Page URL</label>
+            <div style="display:flex;gap:8px;">
+              <input class="field-input" id="classifyUrl" type="url" placeholder="https://university.edu/staff/dr-priya-nair"/>
+              <button class="btn btn-secondary btn-sm" id="classifyTabBtn">&#128204; Current Tab</button>
+            </div>
+            <div class="field-hint">Paste any faculty profile URL &mdash; the server fetches and analyses it with Groq AI.</div>
+          </div>
+          <button class="btn btn-primary" id="classifyBtn" style="width:100%;justify-content:center;">
+            <span id="classifyBtnSpinner"></span><span id="classifyBtnText">&#9889; Classify Profile</span>
+          </button>
+        </div>
+      </div>
+      <div id="classifyAlert"></div>
+      <div id="classifyResult"></div>
+    </div>
+
+    <!-- PAGE: Scrape Directory -->
+    <div class="page" id="pageScrape">
+      <div id="scrapeApiWarn" class="alert warn hidden">&#9888; Groq API Key not set &mdash; go to <strong>API Key</strong> settings to activate.</div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">&#128203; Scrape a Faculty Directory</span></div>
+        <div class="card-body">
+          <div class="field">
+            <label class="field-label" for="scrapeUrl">Faculty Directory URL</label>
+            <div style="display:flex;gap:8px;">
+              <input class="field-input" id="scrapeUrl" type="url" placeholder="https://university.edu/departments/cs/staff"/>
+              <button class="btn btn-secondary btn-sm" id="scrapeTabBtn">&#128204; Current Tab</button>
+            </div>
+            <div class="field-hint">Point to a faculty listing page (not an individual profile).</div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="scrapeMaxPages">Max Pages</label>
+              <input class="field-input" id="scrapeMaxPages" type="number" value="50" min="1" max="500"/>
+            </div>
+            <div class="field">
+              <label class="field-label" for="scrapeMaxProfiles">Max Profiles</label>
+              <input class="field-input" id="scrapeMaxProfiles" type="number" value="500" min="1" max="5000"/>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="scrapeStartBtn" style="flex:1;justify-content:center;">
+              <span id="scrapeStartSpinner"></span><span id="scrapeStartText">&#128203; Start Scraping</span>
+            </button>
+            <button class="btn btn-danger hidden" id="scrapeStopBtn">&#9632; Stop</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="progressPanel" class="hidden" style="margin-top:16px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="progressLabel">Starting&hellip;</span>
+            <div class="progress-stats-row">
+              <div><div class="pstat-val green" id="progSaved">0</div><div class="pstat-lbl">Saved</div></div>
+              <div><div class="pstat-val blue" id="progDone">0</div><div class="pstat-lbl">Done</div></div>
+              <div><div class="pstat-val amber" id="progTotal">?</div><div class="pstat-lbl">Found</div></div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="progress-bar-track"><div class="progress-bar-fill" id="progressBar"></div></div>
+            <div class="progress-pct" id="progressPct">0%</div>
+            <div class="live-feed-wrap">
+              <div class="live-feed-header">
+                <div class="live-feed-title">&#128225; Live Feed</div>
+                <div class="spinner hidden" id="feedSpinner"></div>
+              </div>
+              <div class="live-feed-log" id="liveFeed"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="scrapeAlert"></div>
+    </div>
+
+    <!-- PAGE: Records -->
+    <div class="page" id="pageRecords">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;" id="recordsLabel">Loading&hellip;</div>
+          <div style="font-size:12px;color:var(--text-muted);">Most recently saved records shown first</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="loadRecords()">&#8635; Refresh</button>
+          <button class="btn btn-primary btn-sm" onclick="showPage('export')">&#128202; Export All</button>
+        </div>
+      </div>
+      <div class="table-wrap" id="recordsWrap">
+        <div class="empty-state"><div class="empty-icon">&#128452;</div><div class="empty-title">No records yet</div><div class="empty-sub">Classify or scrape profiles to build your dataset.</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Export -->
+    <div class="page" id="pageExport">
+      <div class="card">
+        <div class="card-header"><span class="card-title">&#128202; Export Dataset</span></div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+            Export all saved faculty records to CSV and styled Excel (.xlsx). Files are saved to <code style="font-family:'JetBrains Mono';font-size:11px;background:var(--bg-card2);padding:1px 6px;border-radius:3px;">output/</code> in your project folder.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+            <div class="card" style="border-color:var(--border-light);">
+              <div class="card-body" style="text-align:center;">
+                <div style="font-size:32px;margin-bottom:8px;">&#128196;</div>
+                <div style="font-weight:700;margin-bottom:4px;">CSV Export</div>
+                <div style="font-size:12px;color:var(--text-muted);">faculty_data.csv<br/>Tabular data for downstream tools</div>
+              </div>
+            </div>
+            <div class="card" style="border-color:var(--border-light);">
+              <div class="card-body" style="text-align:center;">
+                <div style="font-size:32px;margin-bottom:8px;">&#128202;</div>
+                <div style="font-weight:700;margin-bottom:4px;">XLSX Export</div>
+                <div style="font-size:12px;color:var(--text-muted);">faculty_data.xlsx<br/>Styled spreadsheet, stakeholder-ready</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="exportBtn" style="width:100%;justify-content:center;padding:13px;">
+            <span id="exportSpinner"></span><span id="exportText">&#128202; Export to CSV &amp; XLSX</span>
+          </button>
+          <div id="exportResult" style="margin-top:14px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Settings -->
+    <div class="page" id="pageSettings">
+      <div class="card">
+        <div class="card-header"><span class="card-title">&#128273; Groq API Key</span></div>
+        <div class="card-body">
+          <div id="keyStatus" style="margin-bottom:16px;"></div>
+          <div class="field">
+            <label class="field-label" for="keyInput">API Key</label>
+            <div style="display:flex;gap:8px;">
+              <input type="password" class="field-input" id="keyInput" placeholder="Paste your gsk_... key here" autocomplete="off" style="font-family:'JetBrains Mono',monospace;font-size:12px;"/>
+              <button class="btn btn-secondary btn-sm btn-icon-only" id="keyToggle">&#128065;</button>
+            </div>
+            <div class="field-hint">Get a free key at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--blue-soft);">console.groq.com/keys</a>. Saved locally and in your <code style="font-family:'JetBrains Mono';font-size:11px;background:var(--bg-card2);padding:1px 5px;border-radius:3px;">.env</code> file.</div>
+          </div>
+          <button class="btn btn-primary" id="keySaveBtn" style="margin-top:6px;">&#128190; Save Key</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header"><span class="card-title">&#8505;&#65039; About</span></div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">
+            <div><strong style="color:var(--text);">Model:</strong> llama-3.3-70b-versatile (Groq)</div>
+            <div><strong style="color:var(--text);">Server:</strong> http://localhost:8765</div>
+            <div><strong style="color:var(--text);">Data:</strong> cleaned_data.json</div>
+            <div><strong style="color:var(--text);">GitHub:</strong> <a href="https://github.com/chittranshsharma/Academic-Intelligence-Pipeline" target="_blank" style="color:var(--blue-soft);">Academic-Intelligence-Pipeline</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const SERVER = 'http://localhost:8765';
+let online = false, scrapeCtrl = null;
+
+const PAGES = {
+  classify:{ page:'pageClassify', nav:'navClassify', title:'Classify Profile',    sub:'Fetch and classify a faculty profile URL using Groq AI'},
+  scrape:  { page:'pageScrape',   nav:'navScrape',   title:'Scrape Directory',    sub:'Auto-paginate a faculty directory and classify all profiles live'},
+  records: { page:'pageRecords',  nav:'navRecords',  title:'Dataset Records',     sub:'All classified faculty profiles saved in your dataset'},
+  export:  { page:'pageExport',   nav:'navExport',   title:'Export Dataset',      sub:'Download your dataset as CSV and styled Excel spreadsheet'},
+  settings:{ page:'pageSettings', nav:'navSettings', title:'API Key & Settings',  sub:'Configure your Groq API key'},
+};
+
+function showPage(k){
+  Object.entries(PAGES).forEach(([key,v])=>{
+    document.getElementById(v.page).classList.toggle('active',key===k);
+    document.getElementById(v.nav).classList.toggle('active',key===k);
+  });
+  document.getElementById('topbarTitle').textContent = PAGES[k].title;
+  document.getElementById('topbarSub').textContent   = PAGES[k].sub;
+  if(k==='records') loadRecords();
+}
+
+(async()=>{
+  await ping();
+  setupClassify();
+  setupScrape();
+  setupExport();
+  setupSettings();
+  const tab = localStorage.getItem('fi_current_tab');
+  if(tab){ document.getElementById('classifyUrl').value=tab; document.getElementById('scrapeUrl').value=tab; }
+  setInterval(ping, 10000);
+})();
+
+async function ping(){
+  try{
+    const r=await fetch(SERVER+'/status',{signal:AbortSignal.timeout(4000)});
+    if(!r.ok) throw 0;
+    const d=await r.json();
+    online=true;
+    setDot(true);
+    document.getElementById('sidebarStatusLabel').textContent='Connected';
+    document.getElementById('sidebarStatusSub').textContent  =d.record_count+' records';
+    document.getElementById('topbarBadge').textContent       =d.record_count+' saved';
+    setKeyStatus(d.api_key_set, d.api_key_masked||'');
+    document.getElementById('classifyApiWarn').classList.toggle('hidden',d.api_key_set);
+    document.getElementById('scrapeApiWarn').classList.toggle('hidden',  d.api_key_set);
+    return d;
+  }catch{
+    online=false;
+    setDot(false);
+    document.getElementById('sidebarStatusLabel').textContent='Offline';
+    document.getElementById('sidebarStatusSub').textContent  ='Run: python server.py';
+    document.getElementById('topbarBadge').textContent='';
+  }
+}
+function setDot(on){ document.getElementById('sidebarDot').className='status-dot '+(on?'online':'offline'); }
+function refreshAll(){ ping(); loadRecords(); }
+
+// ---- Classify ----
+function setupClassify(){
+  document.getElementById('classifyTabBtn').onclick=()=>{
+    const t=localStorage.getItem('fi_current_tab');
+    if(t) document.getElementById('classifyUrl').value=t;
+    else toast('No tab URL stored by extension.','error');
+  };
+  document.getElementById('classifyBtn').onclick=doClassify;
+  document.getElementById('classifyUrl').onkeydown=e=>{if(e.key==='Enter')doClassify();};
+}
+
+async function doClassify(){
+  const url=document.getElementById('classifyUrl').value.trim();
+  if(!url){toast('Please enter a URL','error');return;}
+  if(!online){toast('Server offline. Run: python server.py','error');return;}
+  setBtnLoading('classifyBtn','classifyBtnSpinner','classifyBtnText',true,'Fetching & Classifying...');
+  document.getElementById('classifyAlert').innerHTML='';
+  document.getElementById('classifyResult').innerHTML='';
+  try{
+    // Proxy fetch via server
+    const pr=await fetch(SERVER+'/fetch-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url}),signal:AbortSignal.timeout(20000)});
+    if(!pr.ok){
+      const e=await pr.json().catch(()=>({detail:pr.statusText}));
+      showAlert('classifyAlert','\u26a0 Could not fetch URL: '+e.detail,'warn');
+      return;
+    }
+    const pd=await pr.json();
+    const html=pd.html||'';
+    const payload={html,url};
+    const apiKey=localStorage.getItem('fi_api_key');
+    if(apiKey) payload.groq_api_key=apiKey;
+    const resp=await fetch(SERVER+'/classify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(90000)});
+    if(!resp.ok){const e=await resp.json().catch(()=>({detail:resp.statusText}));showAlert('classifyAlert','\u274c '+e.detail,'error');return;}
+    renderResult(await resp.json());
+    await ping();
+  }catch(e){showAlert('classifyAlert','\u274c '+e.message,'error');}
+  finally{setBtnLoading('classifyBtn','classifyBtnSpinner','classifyBtnText',false,'\u26a1 Classify Profile');}
+}
+
+function renderResult(r){
+  const wrap=document.getElementById('classifyResult');
+  if(!r.is_south_asian){
+    wrap.innerHTML=`<div class="classify-result excluded"><div class="result-badge excluded">\u2717 Excluded \u2014 Not South Asian</div><div class="result-name">${e(r.name||'Unknown')}</div><div class="result-reason">\u26a0 ${e(r.reason||'Name does not match South Asian database.')}</div></div>`;
+    return;
+  }
+  if(!r.is_valid_role){
+    wrap.innerHTML=`<div class="classify-result partial"><div class="result-badge partial">\u26a0 South Asian \u2014 Not Faculty</div><div class="result-name">${e(r.name||'Unknown')}</div><div class="result-role">${e(r.role||'\u2014')}</div><div class="result-reason">Role is not a qualifying faculty position.<br>${e(r.reason||'')}</div></div>`;
+    return;
+  }
+  const sid='svbtn_'+Date.now();
+  wrap.innerHTML=`<div class="classify-result included">
+    <div class="result-badge included">\u2713 Included \u2014 South Asian Faculty</div>
+    <div class="result-name">${e(r.name)}</div>
+    <div class="result-role">${e(r.role)}</div>
+    <div class="result-grid">
+      <div><div class="rf-label">Origin</div><div class="rf-value accent">${e(r.origin||'\u2014')}</div></div>
+      <div><div class="rf-label">Email</div><div class="rf-value mono">${e(r.email||'\u2014')}</div></div>
+      <div><div class="rf-label">University</div><div class="rf-value">${e(r.university||'\u2014')}</div></div>
+      <div><div class="rf-label">Department</div><div class="rf-value">${e(r.department||'\u2014')}</div></div>
+    </div>
+    <div style="margin-bottom:10px;"><div class="rf-label">Research Interests</div><div class="rf-value" style="font-size:12px;color:var(--text-muted);">${e(r.research_interests||'\u2014')}</div></div>
+    <div style="margin-bottom:10px;"><div class="rf-label">Summary</div><div class="rf-value" style="font-size:12px;color:var(--text-muted);">${e(r.summary||'\u2014')}</div></div>
+    <div class="result-actions">
+      <a href="${e(r.profile_link||'#')}" target="_blank" class="btn btn-secondary btn-sm">\ud83d\udd17 Open Profile</a>
+      <button class="btn btn-success btn-sm" id="${sid}">\ud83d\udcbe Save to Dataset</button>
+    </div></div>`;
+  document.getElementById(sid).onclick=async()=>{
+    const sb=document.getElementById(sid);
+    sb.disabled=true;sb.textContent='Saving...';
+    try{
+      const rs=await fetch(SERVER+'/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({record:r})});
+      const d=await rs.json();
+      if(d.status==='saved'){sb.textContent='\u2713 Saved!';toast('\u2713 '+r.name+' saved','success');await ping();}
+      else{sb.textContent='Already saved';toast('Already in dataset','error');}
+    }catch(ex){sb.disabled=false;sb.textContent='\ud83d\udcbe Save to Dataset';toast('Save failed: '+ex.message,'error');}
+  };
+}
+
+// ---- Scrape Directory ----
+function setupScrape(){
+  document.getElementById('scrapeTabBtn').onclick=()=>{
+    const t=localStorage.getItem('fi_current_tab');
+    if(t) document.getElementById('scrapeUrl').value=t;
+    else toast('No tab URL stored by extension.','error');
+  };
+  document.getElementById('scrapeStartBtn').onclick=doScrape;
+  document.getElementById('scrapeStopBtn').onclick=stopScrape;
+}
+
+async function doScrape(){
+  const url=document.getElementById('scrapeUrl').value.trim();
+  const maxPages=parseInt(document.getElementById('scrapeMaxPages').value)||50;
+  const maxProfiles=parseInt(document.getElementById('scrapeMaxProfiles').value)||500;
+  if(!url){toast('Please enter a directory URL','error');return;}
+  if(!online){toast('Server offline','error');return;}
+  document.getElementById('scrapeAlert').innerHTML='';
+  document.getElementById('progressPanel').classList.remove('hidden');
+  document.getElementById('scrapeStartBtn').classList.add('hidden');
+  document.getElementById('scrapeStopBtn').classList.remove('hidden');
+  document.getElementById('liveFeed').innerHTML='';
+  document.getElementById('progressBar').style.width='0%';
+  document.getElementById('progressPct').textContent='0%';
+  document.getElementById('progSaved').textContent='0';
+  document.getElementById('progDone').textContent='0';
+  document.getElementById('progTotal').textContent='?';
+  document.getElementById('progressLabel').textContent='Starting...';
+  document.getElementById('feedSpinner').classList.remove('hidden');
+  scrapeCtrl=new AbortController();
+  const payload={url,max_pages:maxPages,max_profiles:maxProfiles};
+  const k=localStorage.getItem('fi_api_key');
+  if(k) payload.groq_api_key=k;
+  try{
+    const resp=await fetch(SERVER+'/scrape-directory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:scrapeCtrl.signal});
+    if(!resp.ok){const er=await resp.json().catch(()=>({detail:resp.statusText}));showAlert('scrapeAlert','\u274c '+er.detail,'error');stopScrapeUI();return;}
+    const reader=resp.body.getReader(), dec=new TextDecoder();
+    let buf='';
+    for(;;){
+      const {done,value}=await reader.read();
+      if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');
+      buf=lines.pop();
+      for(const ln of lines){
+        const t=ln.trim();
+        if(!t.startsWith('data:')) continue;
+        let ev;try{ev=JSON.parse(t.slice(5).trim());}catch{continue;}
+        handleSSE(ev);
+      }
+    }
+  }catch(ex){
+    if(ex.name!=='AbortError') showAlert('scrapeAlert','\u274c '+ex.message,'error');
+    stopScrapeUI();
+  }
+}
+
+function stopScrape(){if(scrapeCtrl){scrapeCtrl.abort();scrapeCtrl=null;}addFeed('error','\u23f9 Stopped by user.');stopScrapeUI();}
+function stopScrapeUI(){
+  document.getElementById('scrapeStartBtn').classList.remove('hidden');
+  document.getElementById('scrapeStopBtn').classList.add('hidden');
+  document.getElementById('feedSpinner').classList.add('hidden');
+}
+
+function handleSSE(ev){
+  if(ev.type==='start'){document.getElementById('progressLabel').textContent='Discovering profiles...';addFeed('page','\ud83d\udd0d Start: '+ev.url);}
+  else if(ev.type==='page'){document.getElementById('progTotal').textContent=ev.total_profiles;addFeed('page','\ud83d\udcc4 Page '+ev.page+' \u2014 found '+ev.profiles_found+' links, total: '+ev.total_profiles);}
+  else if(ev.type==='progress'){
+    const idx=ev.index||0,tot=ev.total||0,pct=tot>0?Math.round(idx/tot*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    document.getElementById('progressPct').textContent=pct+'%';
+    document.getElementById('progDone').textContent=idx;
+    document.getElementById('progTotal').textContent=tot;
+    document.getElementById('progressLabel').textContent='Classifying '+idx+' / '+tot+'...';
+    if(ev.status==='included') addFeed('included','\u2713 <span class="hi">'+e(ev.name)+'</span>');
+    else if(ev.status==='not_faculty') addFeed('not_faculty','\u26a0 '+e(ev.name)+' \u2014 not qualifying faculty');
+    else if(ev.status==='duplicate') addFeed('duplicate','\u21a9 Skipped (already in dataset)');
+    else if(ev.status==='excluded') addFeed('excluded','\u2717 '+e(ev.name||ev.url)+' \u2014 not South Asian');
+    else addFeed('excluded','\u2717 '+e(ev.url)+' ('+ev.status+')');
+  }
+  else if(ev.type==='saved'){document.getElementById('progSaved').textContent=ev.total_saved;ping();}
+  else if(ev.type==='done'){
+    document.getElementById('progressBar').style.width='100%';
+    document.getElementById('progressPct').textContent='100%';
+    document.getElementById('progDone').textContent=ev.profiles_found;
+    document.getElementById('progTotal').textContent=ev.profiles_found;
+    document.getElementById('progressLabel').textContent='\u2705 Complete';
+    addFeed('done','\u2705 Done \u2014 '+ev.saved+' saved \u00b7 '+ev.pages_crawled+' pages \u00b7 '+ev.profiles_found+' profiles');
+    toast('\u2705 '+ev.saved+' faculty saved from '+ev.pages_crawled+' pages','success');
+    stopScrapeUI();ping();
+  }
+  else if(ev.type==='error'){addFeed('error','\u274c '+e(ev.message));showAlert('scrapeAlert','\u274c '+e(ev.message),'error');stopScrapeUI();}
+}
+
+function addFeed(type,html){
+  const feed=document.getElementById('liveFeed');
+  const row=document.createElement('div');
+  row.className='feed-row';
+  row.innerHTML='<div class="feed-dot '+type+'"></div><div class="feed-text">'+html+'</div>';
+  feed.appendChild(row);
+  feed.scrollTop=feed.scrollHeight;
+}
+
+// ---- Records ----
+async function loadRecords(){
+  document.getElementById('recordsWrap').innerHTML='<div class="empty-state"><div class="spinner" style="width:24px;height:24px;border-width:3px;margin:0 auto 12px;"></div><div class="empty-title">Loading...</div></div>';
+  try{
+    const r=await fetch(SERVER+'/records');
+    const d=await r.json();
+    document.getElementById('recordsLabel').textContent=d.count+' record'+(d.count!==1?'s':'')+' in dataset';
+    if(!d.recent||!d.recent.length){document.getElementById('recordsWrap').innerHTML='<div class="empty-state"><div class="empty-icon">&#128452;</div><div class="empty-title">No records yet</div><div class="empty-sub">Classify or scrape profiles to build your dataset.</div></div>';return;}
+    const rows=d.recent.map(rec=>`<tr><td><div class="td-name">${e(rec.name||'\u2014')}</div><div class="td-role">${e(rec.role||'\u2014')}</div></td><td><span class="td-origin">${e(rec.origin||'\u2014')}</span></td><td class="truncate" style="max-width:150px;">${e(rec.university||'\u2014')}</td><td class="truncate" style="max-width:120px;">${e(rec.department||'\u2014')}</td><td class="td-email truncate">${e(rec.email||'\u2014')}</td><td><a href="${e(rec.profile_link||'#')}" target="_blank" class="td-link">\ud83d\udd17 Open</a></td></tr>`).join('');
+    document.getElementById('recordsWrap').innerHTML=`<table><thead><tr><th>Name & Role</th><th>Origin</th><th>University</th><th>Department</th><th>Email</th><th>Profile</th></tr></thead><tbody>${rows}</tbody></table>`;
+    if(d.count>d.recent.length) document.getElementById('recordsWrap').innerHTML+=`<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--border);">Showing last ${d.recent.length} of ${d.count} \u2014 export for full dataset</div>`;
+  }catch{document.getElementById('recordsWrap').innerHTML='<div class="empty-state"><div class="empty-title">Could not load records</div><div class="empty-sub">Is the server running?</div></div>';}
+}
+
+// ---- Export ----
+function setupExport(){
+  document.getElementById('exportBtn').onclick=doExport;
+}
+async function doExport(){
+  setBtnLoading('exportBtn','exportSpinner','exportText',true,'Exporting...');
+  try{
+    const resp=await fetch(SERVER+'/export');
+    const d=await resp.json();
+    if(d.status==='exported'){toast('\u2713 Exported to output/ folder','success');document.getElementById('exportResult').innerHTML='<div class="alert info">\u2705 Exported to <strong>output/faculty_data.csv</strong> and <strong>faculty_data.xlsx</strong></div>';}
+  }catch(ex){toast('Export failed: '+ex.message,'error');}
+  finally{setBtnLoading('exportBtn','exportSpinner','exportText',false,'&#128202; Export to CSV & XLSX');}
+}
+
+// ---- Settings ----
+function setupSettings(){
+  document.getElementById('keyToggle').onclick=()=>{const inp=document.getElementById('keyInput');inp.type=inp.type==='password'?'text':'password';};
+  document.getElementById('keySaveBtn').onclick=saveKey;
+  document.getElementById('keyInput').onkeydown=ev=>{if(ev.key==='Enter')saveKey();};
+  const stored=localStorage.getItem('fi_api_key');
+  if(stored) document.getElementById('keyInput').value=stored;
+}
+async function saveKey(){
+  const k=document.getElementById('keyInput').value.trim();
+  if(!k){toast('Please paste a Groq API key','error');return;}
+  const btn=document.getElementById('keySaveBtn');
+  btn.disabled=true;btn.textContent='Saving...';
+  localStorage.setItem('fi_api_key',k);
+  try{
+    const resp=await fetch(SERVER+'/set-api-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groq_api_key:k})});
+    const d=await resp.json();
+    if(d.status==='updated'){setKeyStatus(true,d.api_key_masked||'');toast('\u2713 API Key updated!','success');await ping();}
+  }catch(ex){toast('Failed: '+ex.message,'error');}
+  finally{btn.disabled=false;btn.innerHTML='&#128190; Save Key';}
+}
+function setKeyStatus(isSet,masked){
+  const el=document.getElementById('keyStatus');
+  el.innerHTML=isSet?`<div class="badge badge-green" style="font-size:12px;padding:4px 12px;">\u2713 Key active${masked?' \u00b7 '+masked:''}</div>`:`<div class="badge badge-red" style="font-size:12px;padding:4px 12px;">\u26a0 No API key \u2014 paste below to activate</div>`;
+}
+
+// ---- Helpers ----
+function setBtnLoading(btnId,spinId,textId,loading,text){
+  const btn=document.getElementById(btnId);
+  const sp=document.getElementById(spinId);
+  const tx=document.getElementById(textId);
+  btn.disabled=loading;
+  sp.innerHTML=loading?'<span class="spinner"></span>':'';
+  tx.innerHTML=text;
+}
+function showAlert(containerId,msg,type){ document.getElementById(containerId).innerHTML=`<div class="alert ${type}">${msg}</div>`; }
+function toast(msg,type=''){
+  const c=document.getElementById('toastContainer');
+  const el=document.createElement('div');
+  el.className='toast '+(type||'');
+  el.textContent=msg;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(),4000);
+}
+function e(str){if(!str)return '';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Receive tab URL from extension via localStorage
+window.addEventListener('storage',ev=>{
+  if(ev.key==='fi_current_tab'&&ev.newValue){ document.getElementById('classifyUrl').value=ev.newValue; document.getElementById('scrapeUrl').value=ev.newValue; }
+  if(ev.key==='fi_api_key'&&ev.newValue){ document.getElementById('keyInput').value=ev.newValue; }
+});
+</script>
+</body>
+</html>"""
+
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard.html")
+with open(out, "w", encoding="utf-8") as f:
+    f.write(DASHBOARD_HTML)
+print(f"Written: {out} ({len(DASHBOARD_HTML)} bytes)")

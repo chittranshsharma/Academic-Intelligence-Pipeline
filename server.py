@@ -34,7 +34,7 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 # ── Environment ──────────────────────────────────────────────────────────────
@@ -514,10 +514,53 @@ async def export():
         }
     except Exception as e:
         logger.error(f"Export failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}") 
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+class FetchUrlRequest(BaseModel):
+    url: str
+
+
+@app.post("/fetch-url")
+async def fetch_url(req: FetchUrlRequest):
+    """
+    Server-side URL fetcher / proxy used by the dashboard to retrieve faculty profile HTML.
+    Avoids CORS issues since the server makes the request on behalf of the browser.
+    """
+    try:
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        }
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
+            resp = await client.get(req.url)
+            resp.raise_for_status()
+            return {"html": resp.text, "url": str(resp.url), "status": resp.status_code}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch URL: {str(e)}")
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    """Serve the Faculty Intelligence web dashboard."""
+    dashboard_path = os.path.join(os.path.dirname(__file__), "dashboard.html")
+    if os.path.exists(dashboard_path):
+        with open(dashboard_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    # Fallback minimal page if dashboard.html not found
+    return HTMLResponse(content="""<!DOCTYPE html>
+<html><head><meta charset='UTF-8'><title>Faculty Intelligence</title>
+<style>body{background:#080c12;color:#e2eaf4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+.box{text-align:center;}.icon{font-size:48px;margin-bottom:16px;}.title{font-size:24px;font-weight:700;margin-bottom:8px;}
+.sub{color:#7a90aa;font-size:14px;}</style></head>
+<body><div class='box'><div class='icon'>🎓</div><div class='title'>Faculty Intelligence</div>
+<div class='sub'>dashboard.html not found. Place it in your project root and restart server.py.</div></div></body></html>""")
+
+
+
 
 def _load_data() -> list:
     if os.path.exists(DATA_FILE):
