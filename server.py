@@ -25,6 +25,7 @@ import logging
 import os
 import re
 import sys
+import random
 from datetime import datetime
 from typing import AsyncGenerator, Optional
 from urllib.parse import urljoin, urlparse
@@ -190,7 +191,7 @@ async def _fetch_page_js(url: str, wait_extra_ms: int = 2500) -> str:
             ],
         )
         context = await browser.new_context(
-            user_agent=random.choice(_UA_POOL),
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             viewport={"width": 1440, "height": 900},
             locale="en-US",
             java_script_enabled=True,
@@ -298,14 +299,16 @@ class ClassifyRequest(BaseModel):
     html: str
     url: str
     groq_api_key: Optional[str] = None
+    model: Optional[str] = None
 
 
 class ScrapeDirectoryRequest(BaseModel):
-    url: str                     # Starting directory URL
+    url: str
     max_pages: int = 100         # Max pagination pages to follow
     max_profiles: int = 1000     # Hard cap on profiles to process
     concurrency: int = 5         # Parallel Groq calls per batch
     groq_api_key: Optional[str] = None
+    model: Optional[str] = None
 
 
 class SaveRequest(BaseModel):
@@ -338,6 +341,11 @@ async def set_api_key(req: ApiKeyRequest):
 
     update_api_key(req.groq_api_key)
     masked = f"{groq_api_key[:4]}...{groq_api_key[-4:]}" if len(groq_api_key) > 8 else "***"
+    
+    # Update parser model if provided
+    global _parser
+    if req.model and _parser:
+        _parser.model_name = req.model
     return {
         "status": "updated",
         "api_key_set": True,
@@ -355,6 +363,10 @@ async def classify(req: ClassifyRequest):
     """
     if req.groq_api_key and req.groq_api_key.strip():
         update_api_key(req.groq_api_key)
+        
+    global _parser
+    if req.model and _parser:
+        _parser.model_name = req.model
 
     if not groq_api_key:
         raise HTTPException(
@@ -402,6 +414,10 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
     """
     if req.groq_api_key and req.groq_api_key.strip():
         update_api_key(req.groq_api_key)
+        
+    global _parser
+    if req.model and _parser:
+        _parser.model_name = req.model
 
     if not groq_api_key:
         raise HTTPException(
@@ -432,26 +448,31 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
                     visited_pages.add(current_page_url)
                     page_num += 1
 
-                    # ── Fetch the directory page ─────────────────────────────
+                    fetch_failed = False
                     try:
                         if use_playwright:
                             html = await _fetch_page_js(current_page_url)
                         else:
                             html = await _fetch_page(client, current_page_url)
                     except Exception as e:
-                        yield sse({"type": "error", "message": f"Failed to fetch page {page_num}: {e}"})
-                        break
+                        if page_num == 1 and not use_playwright:
+                            # Instead of breaking, allow the Playwright fallback to attempt bypassing the 403
+                            fetch_failed = True
+                            html = ""
+                        else:
+                            yield sse({"type": "error", "message": f"Failed to fetch page {page_num}: {e}"})
+                            break
 
-                    # ── Auto-detect JS-rendered SPA on first page ────────────
+                    # ── Auto-detect JS-rendered SPA or 403 Block on first page ────────────
                     page_profiles = _extract_profile_links(html, current_page_url)
-                    if not page_profiles and page_num == 1 and not use_playwright:
-                        js_hint = _looks_like_js_page(html)
+                    if (fetch_failed or not page_profiles) and page_num == 1 and not use_playwright:
+                        js_hint = _looks_like_js_page(html) if not fetch_failed else False
+                        reason = "WAF Block (403)" if fetch_failed else "JavaScript-rendered page (React/Vue/Angular SPA)" if js_hint else "No profiles found in static HTML"
                         yield sse({
                             "type": "info",
                             "message": (
-                                "🤖 Detected JavaScript-rendered page"
-                                + (" (React/Vue/Angular SPA)" if js_hint else "")
-                                + " — switching to headless Chromium (Playwright). "
+                                f"🤖 Detected {reason} "
+                                "— switching to headless Chromium (Playwright). "
                                 "This may take 10-20s per page…"
                             ),
                         })
@@ -497,10 +518,11 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
                     await asyncio.sleep(random.uniform(2.5, 4.0) if use_playwright else random.uniform(0.8, 2.0))
 
             if not all_profile_urls:
+                html_len = len(html) if html else 0
                 yield sse({
                     "type": "error",
                     "message": (
-                        "No profile links found even after trying headless browser.\n"
+                        f"No profile links found even after trying headless browser (html len: {html_len}).\n"
                         "The site may require login, use non-standard URL patterns, "
                         "or the profile links use paths not in our heuristic list.\n"
                         "Try: https://www.ece.uw.edu/people/faculty/ or "
@@ -532,10 +554,13 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
 
                     # Fetch profile HTML with browser headers + retry
                     try:
-                        async with httpx.AsyncClient(
-                            follow_redirects=True, timeout=20.0
-                        ) as c:
-                            profile_html = await _fetch_page(c, url, referer=req.url)
+                        if use_playwright:
+                            profile_html = await _fetch_page_js(url, wait_extra_ms=1000)
+                        else:
+                            async with httpx.AsyncClient(
+                                follow_redirects=True, timeout=20.0
+                            ) as c:
+                                profile_html = await _fetch_page(c, url, referer=req.url)
                     except Exception as e:
                         skipped_count += 1
                         return None, url, f"fetch_error: {e}"
@@ -867,12 +892,12 @@ def _find_next_page(html: str, base_url: str) -> str | None:
 
 # ── Entry Point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    logger.info("=" * 55)
+    logger.info("=======================================================")
     logger.info("  Faculty Intelligence Server  ")
     logger.info(f"  Model  : {DEFAULT_MODEL}")
-    logger.info(f"  API Key: {'✓ Set' if groq_api_key else '✗ NOT SET — set GROQ_API_KEY in .env'}")
+    logger.info(f"  API Key: {'[OK] Set' if groq_api_key else '[WARNING] NOT SET - set GROQ_API_KEY in .env'}")
     logger.info(f"  URL    : http://{SERVER_HOST}:{SERVER_PORT}")
-    logger.info("=" * 55)
+    logger.info("=======================================================")
 
     uvicorn.run(
         app,

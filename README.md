@@ -28,7 +28,7 @@
 
 The **Academic Intelligence Pipeline** is an end-to-end data engineering system and browser assistant designed to discover, scrape, parse, and classify faculty profiles from global university websites. It eliminates manual data collection bottlenecks and replaces slow research with an AI-augmented pipeline and real-time browser companion.
 
-At its core, the system combines **Playwright browser automation**, **high-concurrency HTTPX fetching**, **Groq AI inference** (`llama-3.3-70b-versatile`) or local LLMs (via Ollama), **name-based heuristic filtering**, a **FastAPI backend**, and a **Manifest V3 Chrome Extension** with dynamic API key uploading.
+At its core, the system combines a **dual-engine crawler** (HTTPX fast fetch + Playwright headless Chromium for JavaScript SPAs & Cloudflare WAF bypass), **Groq AI inference** (`llama-3.3-70b-versatile`), **LLM-assisted South Asian origin verification**, a **FastAPI backend**, and a **Manifest V3 Chrome Extension** with live SSE streaming and dynamic API key hot-swapping.
 
 > **Use Case:** Automatically build a structured dataset of South Asian-origin faculty members at global research institutions — complete with names, roles, departments, emails, research interests, and source URLs — via CLI batch jobs or directly while browsing faculty directories in your browser.
 

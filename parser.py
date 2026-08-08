@@ -378,6 +378,7 @@ Return a JSON object with exactly these keys:
 - "origin": Specific South Asian country of origin deduced from their name and any biographical info
              (e.g., "India", "Pakistan", "Bangladesh", "Sri Lanka", "Nepal"). 
              Only use South Asian countries here. If unclear, write "South Asian".
+- "is_south_asian": boolean (true or false). Determine if the person's name is of South Asian origin (India, Pakistan, Bangladesh, Sri Lanka, Nepal, etc.).
 
 STRICT RULES:
 1. "name" = person's name only, no titles at all.
@@ -462,11 +463,11 @@ Combined Page Content (university profile + personal website):
 
                 name = profile_data.get("name", "").strip()
                 role = profile_data.get("role", "").strip()
+                is_sa = profile_data.get("is_south_asian")
 
-                # Double-check the actual extracted name against South Asian list
-                # (URL name might have been a false positive or page might have different name)
-                if name and not is_south_asian_name(name):
-                    logger.info(f"Excluded '{name}' — extracted name not South Asian.")
+                # Double-check the actual extracted name using the LLM's verdict
+                if is_sa is False:
+                    logger.info(f"Excluded '{name}' — LLM determined name is not South Asian.")
                     skipped_not_south_asian += 1
                     continue
 
@@ -546,17 +547,6 @@ Combined Page Content (university profile + personal website):
             dict with keys: is_south_asian, is_valid_role, and all profile fields.
             Returns None only on hard LLM failure.
         """
-        # ── Fast URL-slug pre-filter ──
-        url_name = self._get_name_from_url(url)
-        if url_name and not is_south_asian_name(url_name):
-            logger.info(f"[Extension] Skipped '{url_name}' — URL slug not South Asian.")
-            return {
-                "is_south_asian": False,
-                "is_valid_role": False,
-                "name": url_name,
-                "reason": "URL slug does not match any South Asian name."
-            }
-
         # ── Clean HTML + optional personal website enrichment ──
         page_text = self._clean_html(html)
         personal_site_url = self._extract_personal_website(html, url)
@@ -573,15 +563,16 @@ Combined Page Content (university profile + personal website):
 
         name = profile_data.get("name", "").strip()
         role = profile_data.get("role", "").strip()
+        is_sa = profile_data.get("is_south_asian")
 
-        # ── Name validation ──
-        if name and not is_south_asian_name(name):
-            logger.info(f"[Extension] Excluded '{name}' — extracted name not South Asian.")
+        # ── Name validation (LLM verdict) ──
+        if is_sa is False:
+            logger.info(f"[Extension] Excluded '{name}' — LLM determined name is not South Asian.")
             return {
                 "is_south_asian": False,
                 "is_valid_role": False,
                 "name": name,
-                "reason": "Extracted name does not match South Asian name list."
+                "reason": "AI determined name is not of South Asian origin."
             }
 
         # ── Role validation ──
