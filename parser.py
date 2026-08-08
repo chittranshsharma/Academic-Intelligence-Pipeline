@@ -7,6 +7,9 @@ import httpx
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from openai import AsyncOpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -190,26 +193,35 @@ def is_south_asian_name(full_name: str) -> bool:
 
 
 class FacultyParser:
-    def __init__(self, input_json="raw_data.json", output_json="cleaned_data.json", screenshots_dir="screenshots", model_name="qwen3:14b"):
+    def __init__(self, input_json="raw_data.json", output_json="cleaned_data.json",
+                 screenshots_dir="screenshots", model_name="llama-3.3-70b-versatile",
+                 groq_api_key: str = None):
         """
         Initialize the FacultyParser.
-        
+
         Args:
             input_json (str): Path to raw scraped data JSON file.
             output_json (str): Path where parsed and cleaned data will be saved.
             screenshots_dir (str): Directory where error screenshots will be saved.
-            model_name (str): Name of the local LLM model (e.g., qwen2.5:14b, llama3, etc. via Ollama).
+            model_name (str): Groq model ID. Default: llama-3.3-70b-versatile (best free model).
+            groq_api_key (str): Groq API key. Falls back to GROQ_API_KEY env var.
         """
         self.input_json = input_json
         self.output_json = output_json
         self.screenshots_dir = screenshots_dir
         os.makedirs(self.screenshots_dir, exist_ok=True)
 
+        api_key = groq_api_key or os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            logger.warning("GROQ_API_KEY is not set. Set it in your .env file or pass groq_api_key= directly.")
+
+        # Groq is fully OpenAI-API-compatible — just point to their endpoint
         self.client = AsyncOpenAI(
-            base_url="http://localhost:11434/v1",
-            api_key="ollama"
+            base_url="https://api.groq.com/openai/v1",
+            api_key=api_key
         )
         self.model_name = model_name
+        logger.info(f"FacultyParser initialized | Backend: Groq API | Model: {self.model_name}")
 
     def _is_valid_role(self, role: str) -> bool:
         if not role:
@@ -518,6 +530,97 @@ Combined Page Content (university profile + personal website):
         logger.info(f"Saved to: {self.output_json}")
         logger.info("=" * 50)
         return self.output_json
+
+
+    async def classify_html(self, html: str, url: str) -> dict | None:
+        """
+        Standalone single-page classifier for the browser extension server.
+        Accepts raw HTML + URL, runs the full extraction + validation pipeline,
+        and returns a structured profile dict (or None if not classifiable).
+
+        Args:
+            html (str): Raw HTML content of the faculty profile page.
+            url  (str): Canonical URL of the profile page.
+
+        Returns:
+            dict with keys: is_south_asian, is_valid_role, and all profile fields.
+            Returns None only on hard LLM failure.
+        """
+        # ── Fast URL-slug pre-filter ──
+        url_name = self._get_name_from_url(url)
+        if url_name and not is_south_asian_name(url_name):
+            logger.info(f"[Extension] Skipped '{url_name}' — URL slug not South Asian.")
+            return {
+                "is_south_asian": False,
+                "is_valid_role": False,
+                "name": url_name,
+                "reason": "URL slug does not match any South Asian name."
+            }
+
+        # ── Clean HTML + optional personal website enrichment ──
+        page_text = self._clean_html(html)
+        personal_site_url = self._extract_personal_website(html, url)
+        personal_site_text = await self._fetch_personal_website_text(personal_site_url)
+        if personal_site_text:
+            page_text += "\n\n=== PERSONAL WEBSITE CONTENT ===\n" + personal_site_text
+            logger.info(f"[Extension] Enriched with personal website: {personal_site_url}")
+
+        # ── LLM extraction ──
+        logger.info(f"[Extension] LLM extracting: {url}")
+        profile_data = await self._extract_profile_data(page_text, url)
+        if not profile_data:
+            return None
+
+        name = profile_data.get("name", "").strip()
+        role = profile_data.get("role", "").strip()
+
+        # ── Name validation ──
+        if name and not is_south_asian_name(name):
+            logger.info(f"[Extension] Excluded '{name}' — extracted name not South Asian.")
+            return {
+                "is_south_asian": False,
+                "is_valid_role": False,
+                "name": name,
+                "reason": "Extracted name does not match South Asian name list."
+            }
+
+        # ── Role validation ──
+        if not role or not self._is_valid_role(role):
+            return {
+                "is_south_asian": True,
+                "is_valid_role": False,
+                "name": name,
+                "role": role,
+                "reason": f"Role '{role}' is not a qualifying faculty position."
+            }
+
+        # ── Field sanitization ──
+        email = profile_data.get("email", "").strip()
+        phone = profile_data.get("phone", "").strip()
+        if email and "@" not in email:
+            email = ""
+        if phone and not re.search(r'\d', phone):
+            phone = ""
+
+        result = {
+            "is_south_asian": True,
+            "is_valid_role": True,
+            "country": "UK",
+            "university": profile_data.get("university", "").strip(),
+            "department": profile_data.get("department", "").strip(),
+            "name": name,
+            "origin": (profile_data.get("origin") or "South Asian").strip() or "South Asian",
+            "role": role,
+            "email": email,
+            "phone": phone or "NA",
+            "profile_link": url,
+            "research_interests": profile_data.get("research_interests", "").strip(),
+            "summary": profile_data.get("summary", "").strip(),
+            "confidence_score": "Name Matched + LLM Verified",
+            "review_status": "Pending",
+        }
+        logger.info(f"[Extension] INCLUDED: {name} | {role} | {result['university']} | Origin: {result['origin']}")
+        return result
 
 
 if __name__ == "__main__":

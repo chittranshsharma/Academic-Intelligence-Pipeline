@@ -3,3 +3,8 @@ beautifulsoup4
 pandas
 openpyxl
 openai
+groq
+httpx
+fastapi
+uvicorn[standard]
+python-dotenv

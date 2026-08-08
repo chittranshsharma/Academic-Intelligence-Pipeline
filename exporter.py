@@ -2,31 +2,9 @@ import json
 import logging
 import pandas as pd
 import os
-from openpyxl import load_workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 
 logger = logging.getLogger(__name__)
 
-# Column display widths (in Excel units). Adjust as needed.
-COLUMN_WIDTHS = {
-    "S No":           6,
-    "Region":         10,
-    "University Name": 30,
-    "Department":     28,
-    "Faculty Name":   22,
-    "Origin":         14,
-    "Position":       36,
-    "Email":          30,
-    "Phone":          18,
-    "Profile link":   45,
-    "Research":       50,
-    "Notes":          60,
-}
-
-HEADER_COLOR  = "1F3864"   # Dark navy
-HEADER_FONT   = "FFFFFF"   # White text
-ALT_ROW_COLOR = "DCE6F1"   # Light blue alternating rows
 
 
 class FacultyExporter:
@@ -34,8 +12,7 @@ class FacultyExporter:
         self.input_json = input_json
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
-        self.csv_path  = os.path.join(self.output_dir, "faculty_data.csv")
-        self.xlsx_path = os.path.join(self.output_dir, "faculty_data.xlsx")
+        self.csv_path = os.path.join(self.output_dir, "faculty_data.csv")
 
     def _build_dataframe(self, data):
         df = pd.DataFrame(data)
@@ -85,53 +62,6 @@ class FacultyExporter:
         # ── S No ──
         df.insert(0, "S No", range(1, len(df) + 1))
         return df
-
-    def _style_xlsx(self, path):
-        """Apply professional styling: bold header, column widths, alternating rows, wrapping."""
-        wb = load_workbook(path)
-        ws = wb.active
-
-        header_fill = PatternFill("solid", fgColor=HEADER_COLOR)
-        alt_fill    = PatternFill("solid", fgColor=ALT_ROW_COLOR)
-        thin_border = Border(
-            left=Side(style="thin", color="AAAAAA"),
-            right=Side(style="thin", color="AAAAAA"),
-            top=Side(style="thin", color="AAAAAA"),
-            bottom=Side(style="thin", color="AAAAAA"),
-        )
-
-        # Style header row
-        for col_idx, cell in enumerate(ws[1], start=1):
-            cell.font      = Font(bold=True, color=HEADER_FONT, name="Calibri", size=11)
-            cell.fill      = header_fill
-            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=False)
-            cell.border    = thin_border
-
-            # Set column width from our map, fall back to auto-detect
-            col_name = cell.value or ""
-            width = COLUMN_WIDTHS.get(col_name, 20)
-            ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-        # Style data rows
-        for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):
-            fill = alt_fill if row_idx % 2 == 0 else None
-            for cell in row:
-                if fill:
-                    cell.fill = fill
-                cell.border    = thin_border
-                cell.alignment = Alignment(vertical="top", wrap_text=True)
-                cell.font      = Font(name="Calibri", size=10)
-
-        # Freeze the header row
-        ws.freeze_panes = "A2"
-
-        # Row height: a bit taller for data rows so wrapped text shows
-        ws.row_dimensions[1].height = 20
-        for row_idx in range(2, ws.max_row + 1):
-            ws.row_dimensions[row_idx].height = 60
-
-        wb.save(path)
-        logger.info("Applied professional styling to xlsx.")
 
     def export(self):
         if not os.path.exists(self.input_json):
