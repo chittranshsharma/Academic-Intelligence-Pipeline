@@ -3,14 +3,14 @@
 <h1>🎓 Academic Intelligence Pipeline</h1>
 
 <p>
-  <strong>Automated faculty profile discovery, extraction, and classification system<br>powered by Python · Playwright · Local LLMs · Data Automation</strong>
+  <strong>Automated faculty profile discovery, extraction, and classification system<br>powered by Python · Playwright · Groq AI / Local LLMs · FastAPI · Chrome Extension</strong>
 </p>
 
 <p>
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/Playwright-Async-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright"/>
-  <img src="https://img.shields.io/badge/LLM-Ollama%20%2F%20OpenAI-FF6B6B?style=for-the-badge&logo=openai&logoColor=white" alt="LLM"/>
-  <img src="https://img.shields.io/badge/Pandas-Data%20Pipeline-150458?style=for-the-badge&logo=pandas&logoColor=white" alt="Pandas"/>
+  <img src="https://img.shields.io/badge/FastAPI-Server-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/Chrome_Extension-Manifest_V3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Extension"/>
+  <img src="https://img.shields.io/badge/LLM-Groq%20%2F%20Ollama-FF6B6B?style=for-the-badge&logo=openai&logoColor=white" alt="LLM"/>
   <img src="https://img.shields.io/badge/Export-CSV%20%7C%20XLSX-217346?style=for-the-badge&logo=microsoft-excel&logoColor=white" alt="Export"/>
 </p>
 
@@ -26,74 +26,79 @@
 
 ## 📌 Overview
 
-The **Academic Intelligence Pipeline** is a fully automated, end-to-end data engineering system that discovers, scrapes, parses, and classifies faculty profiles from university websites across global institutions. It was architected to eliminate manual data collection bottlenecks and replace slow, error-prone human research with a deterministic, AI-augmented pipeline.
+The **Academic Intelligence Pipeline** is an end-to-end data engineering system and browser assistant designed to discover, scrape, parse, and classify faculty profiles from global university websites. It eliminates manual data collection bottlenecks and replaces slow research with an AI-augmented pipeline and real-time browser companion.
 
-At its core, the system combines **Playwright-driven browser automation** for JavaScript-rendered discovery pages, **high-concurrency HTTPX** for bulk profile downloads, **local LLM inference** (via Ollama) for structured field extraction, and **name-based heuristic filtering** to classify academic profiles by ethnicity/origin — all wired together in a three-phase asynchronous pipeline with structured logging and error recovery.
+At its core, the system combines **Playwright browser automation**, **high-concurrency HTTPX fetching**, **Groq AI inference** (`llama-3.3-70b-versatile`) or local LLMs (via Ollama), **name-based heuristic filtering**, a **FastAPI backend**, and a **Manifest V3 Chrome Extension** with dynamic API key uploading.
 
-> **Use Case:** Automatically build a structured dataset of South Asian-origin faculty members at global research institutions — complete with names, roles, departments, emails, research interests, and source URLs — with zero manual intervention after initial configuration.
+> **Use Case:** Automatically build a structured dataset of South Asian-origin faculty members at global research institutions — complete with names, roles, departments, emails, research interests, and source URLs — via CLI batch jobs or directly while browsing faculty directories in your browser.
 
 ---
 
 ## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    ACADEMIC INTELLIGENCE PIPELINE                    │
-│                                                                     │
-│  ┌─────────────┐    ┌──────────────────┐    ┌────────────────────┐  │
-│  │  PHASE 1    │    │    PHASE 2        │    │    PHASE 3         │  │
-│  │  CRAWLING   │───▶│  PARSING & LLM   │───▶│  EXPORT & REPORT  │  │
-│  │             │    │  CLASSIFICATION  │    │                    │  │
-│  │ Playwright  │    │ BeautifulSoup +  │    │  CSV / XLSX        │  │
-│  │ HTTPX       │    │ Local LLM (Any)  │    │  Deduplication     │  │
-│  │ Smart URL   │    │ Name Heuristics  │    │  Styled Reports    │  │
-│  │ Heuristics  │    │ Role Validation  │    │                    │  │
-│  └─────────────┘    └──────────────────┘    └────────────────────┘  │
-│                                                                     │
-│              Structured Logging · Async I/O · Error Recovery        │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ACADEMIC INTELLIGENCE PIPELINE                           │
+│                                                                             │
+│   ┌─────────────────────┐                 ┌─────────────────────────────┐   │
+│   │ 🚀 CLI Orchestrator │                 │ 🧩 Chrome Extension (MV3)   │   │
+│   │ (main.py batch job) │                 │ Real-time & SSE Streaming   │   │
+│   └──────────┬──────────┘                 └──────────────┬──────────────┘   │
+│              │                                           │                  │
+│              └───────────────────┬───────────────────────┘                  │
+│                                  ▼                                          │
+│                      ┌───────────────────────┐                              │
+│                      │  ⚡ Local FastAPI     │                              │
+│                      │  Server (server.py)   │                              │
+│                      └───────────┬───────────┘                              │
+│                                  │                                          │
+│    ┌─────────────────────────────┼─────────────────────────────┐            │
+│    ▼                             ▼                             ▼            │
+│  ┌─────────────┐       ┌──────────────────┐       ┌────────────────────┐    │
+│  │  PHASE 1    │       │    PHASE 2       │       │    PHASE 3         │    │
+│  │  CRAWLING   │──────▶│  PARSING & LLM   │──────▶│  EXPORT & REPORT  │    │
+│  │             │       │  CLASSIFICATION  │       │                    │    │
+│  │ Playwright  │       │ BeautifulSoup +  │       │  CSV / XLSX        │    │
+│  │ HTTPX       │       │ Groq API / LLM   │       │  Deduplication     │    │
+│  │ Smart URL   │       │ Name Heuristics  │       │  Styled Reports    │    │
+│  │ Heuristics  │       │ Role Validation  │       │                    │    │
+│  └─────────────┘       └──────────────────┘       └────────────────────┘    │
+│                                                                             │
+│              Structured Logging · Async I/O · Error Recovery                │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The pipeline is broken into three clearly separated, independently testable phases orchestrated by `main.py`:
-
-| Phase | Module | Responsibility |
-|-------|--------|---------------|
-| **1 — Crawl** | `crawler.py` | Discover profile URLs from faculty directory pages via Playwright; download raw HTML via HTTPX or Playwright |
-| **2 — Parse** | `parser.py` | Clean HTML → run local LLM extraction → apply name + role filters → enrich with personal website content |
-| **3 — Export** | `exporter.py` | Deduplicate, normalize, and export structured data to styled `.csv` and `.xlsx` |
+The pipeline operates via two complementary entry points:
+1. **Batch CLI (`main.py`)**: Runs high-throughput multi-institution scraping tasks.
+2. **Browser Sidekick (`server.py` + `extension/`)**: Real-time single profile classification and live directory streaming right inside Google Chrome.
 
 ---
 
 ## ✨ Key Features
 
-### 🤖 AI-Augmented Profile Extraction
-- Uses any **local LLM** (e.g. Qwen, Llama via Ollama or custom local models) to extract structured fields — name, role, email, department, research interests, origin — directly from raw HTML text
-- Enforces a strict zero-hallucination prompt: the model is instructed to return only explicitly stated information
-- **JSON-mode output** with robust multi-strategy parsing fallback for malformed LLM responses
+### 🧩 Chrome Extension & Real-Time Assistant
+- **Manifest V3 Popup UI**: Dark-mode glassmorphism interface displaying connection status, dataset counts, and current tab preview.
+- **⚡ Single Page Classifier**: Instantly classify the current profile tab with one click.
+- **📋 Directory Scraper (SSE Stream)**: Auto-paginate and stream batch classification results live without keeping the popup open.
+- **🔑 Dynamic Groq API Key Uploader**: Paste/update your Groq API key directly from the browser popup without restarting the Python server.
+
+### 🤖 AI-Augmented Profile Extraction (Groq & Local LLMs)
+- Powered by **Groq API** (`llama-3.3-70b-versatile`) or local Ollama models (`qwen3:14b`, `llama3`).
+- Zero-hallucination prompt architecture enforcing structured JSON output for name, position, department, university, email, research interests, and origin.
+- Multi-strategy parsing fallbacks handle invalid JSON or truncated responses gracefully.
 
 ### 🕸️ Dual-Engine Web Crawler
-- **Playwright engine**: Headless Chromium for JavaScript-rendered directory pages; handles pagination automatically with `rel="next"`, text-based, and class-based link detection
-- **HTTPX engine**: Async, high-concurrency (configurable; default 10) bulk profile downloader using connection pooling — dramatically faster than browser-based alternatives
-- Smart URL heuristics filter out generic links (about, search, policies) and isolate only valid individual profile URLs
+- **Playwright Engine**: Handles JavaScript-rendered directory pages with automated `rel="next"` and heuristic pagination.
+- **HTTPX Engine**: High-concurrency async fetching for profile pages using connection pooling.
+- Smart URL heuristics filter out generic site pages (about, search, policies) to target valid faculty profile links.
 
 ### 🧬 Name-Based Heuristic Pre-Filter
-- A curated, comprehensive surname/first-name dataset spanning **India (all regions), Pakistan, Bangladesh, Sri Lanka, and Nepal** — 400+ entries
-- Applied as a fast pre-filter before any LLM call, cutting compute cost by skipping clearly non-matching profiles
-- Post-LLM double-check validates the extracted name against the same dataset
+- A curated surname and first-name database covering **India (all regions), Pakistan, Bangladesh, Sri Lanka, and Nepal** (400+ entries).
+- Fast pre-filtering skips non-matching profiles before LLM inference to optimize API calls and speed.
 
-### 📊 Automated Data Processing & Deduplication
-- Profile-URL-based deduplication ensures no duplicate records in the output
-- Field normalization: invalid emails (no `@`) and invalid phone numbers are automatically cleared
-- Confidence scoring on each record (`Name Matched + LLM Verified`)
-
-### 📁 Professional Report Export
-- Exports to both **CSV** and **styled XLSX**
-- XLSX features: dark navy header, alternating row colors, frozen header row, calibrated column widths, wrapped text, border styling — production-ready for stakeholder delivery
-
-### 📋 Structured Logging & Error Recovery
-- Full file + console logging with timestamps and module identifiers
-- On LLM or parsing failure: automatic Playwright screenshot capture for forensic debugging
-- Graceful error handling at every stage — the pipeline never crashes silently
+### 📊 Professional Report Export
+- Exports to clean **CSV** and styled **XLSX** spreadsheets (`output/faculty_data.xlsx`).
+- Features dark navy headers, alternating row striping, auto-calibrated column widths, wrapped text, and URL-based deduplication.
 
 ---
 
@@ -102,43 +107,51 @@ The pipeline is broken into three clearly separated, independently testable phas
 ```
 academic-intelligence-pipeline/
 │
-├── main.py              # 🚀 Orchestrator — runs all 3 pipeline phases
-├── crawler.py           # 🕸️  Phase 1: URL discovery + HTML download (Playwright + HTTPX)
-├── parser.py            # 🧠  Phase 2: HTML cleaning + LLM extraction + filtering
+├── main.py              # 🚀 CLI Orchestrator — runs batch crawling & parsing
+├── server.py            # ⚡ FastAPI Local Server — bridges Chrome extension & Groq API
+├── crawler.py           # 🕸️  Phase 1: Playwright directory pagination + HTTPX downloads
+├── parser.py            # 🧠  Phase 2: HTML cleaning + LLM extraction + name heuristics
 ├── exporter.py          # 📊  Phase 3: Deduplication + CSV/XLSX export
 │
+├── extension/           # 🧩 Chrome Extension (Manifest V3)
+│   ├── manifest.json    # Extension manifest definition
+│   ├── popup.html       # Popup user interface & API key card
+│   ├── popup.js         # Popup logic, server bridge & single classification
+│   ├── background.js    # Service worker for background SSE directory scraping
+│   └── icons/           # Extension icons (16, 48, 128px)
+│
 ├── requirements.txt     # Python dependencies
+├── .env                 # Environment variables (GROQ_API_KEY)
 │
-├── raw_html/            # Intermediate: raw downloaded HTML files (auto-created)
-├── logs/                # Structured pipeline logs (auto-created)
-├── screenshots/         # Debug screenshots on parse errors (auto-created)
-├── output/              # Final output: faculty_data.csv, faculty_data.xlsx
+├── raw_html/            # Intermediate raw HTML downloads (auto-created)
+├── logs/                # Pipeline logs (auto-created)
+├── screenshots/         # Debug screenshots on parse error (auto-created)
+├── output/              # Final datasets: faculty_data.csv, faculty_data.xlsx
 │
-├── raw_data.json        # Intermediate: crawl output (URL + HTML path index)
-└── cleaned_data.json    # Intermediate: LLM-parsed, filtered profile records
+├── raw_data.json        # Intermediate crawl output
+└── cleaned_data.json    # Intermediate LLM-parsed records
 ```
 
 ---
 
-## ⚙️ Installation
+## ⚙️ Installation & Setup
 
 ### Prerequisites
 
-| Requirement | Version |
-|-------------|---------|
+| Requirement | Version / Link |
+|-------------|----------------|
 | Python | 3.11+ |
-| [Ollama](https://ollama.ai) | Latest (or custom OpenAI API endpoints) |
-| Local LLM Model | e.g. Qwen, Llama, Mistral (run locally via Ollama) |
-| Chromium (for Playwright) | Auto-installed |
+| Groq API Key | Free key from [console.groq.com/keys](https://console.groq.com/keys) |
+| Browser | Google Chrome / Chromium |
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/academic-intelligence-pipeline.git
-cd academic-intelligence-pipeline
+git clone https://github.com/chittranshsharma/Academic-Intelligence-Pipeline.git
+cd Academic-Intelligence-Pipeline
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate a virtual environment
 
 ```bash
 python -m venv .venv
@@ -150,41 +163,70 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install Python dependencies
+### 3. Install dependencies & Playwright browser
 
 ```bash
 pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 4. Start Ollama and pull your LLM model of choice
+### 4. Configure Groq API Key
 
-```bash
-# Install Ollama from https://ollama.ai, then run your preferred model:
-ollama pull qwen3:14b  # Or any other model like llama3, mistral, etc.
-ollama serve
+Create a `.env` file in the project root:
+
+```env
+GROQ_API_KEY=gsk_your_groq_api_key_here
 ```
 
-> **Note:** The LLM runs entirely **locally** — no data leaves your machine and no API keys are required.
+*(Alternatively, you can paste your Groq API key directly inside the Chrome Extension popup).*
+
+---
+
+## 🧩 Installing the Chrome Extension
+
+1. Open Chrome and navigate to `chrome://extensions/`.
+2. Enable **Developer mode** (toggle in the top-right corner).
+3. Click **Load unpacked**.
+4. Select the `extension/` folder inside this repository.
+5. Pin **Faculty Intelligence** 🎓 to your Chrome toolbar.
 
 ---
 
 ## 🚀 Usage
 
-### Basic — scrape a single faculty directory
+### 1. Running via Chrome Extension (Recommended for Interactive Use)
+
+Start the local server:
+
+```bash
+python server.py
+```
+*Server starts on `http://127.0.0.1:8765`.*
+
+**Using the Extension:**
+- **Upload API Key**: Click the 🔑 **Groq API Key** card in the extension popup to paste or update your key anytime.
+- **Classify Current Tab**: Navigate to any faculty member's profile page and click **⚡ Classify This Page**.
+- **Scrape Directory**: Navigate to a directory listing page, switch to **📋 Scrape Directory**, configure Max Pages/Profiles, and click **Scrape This Directory**. Progress will stream live.
+- **Export**: Click **📊 Export** to generate `output/faculty_data.xlsx` and `output/faculty_data.csv`.
+
+---
+
+### 2. Running via Command Line (Batch Processing)
+
+Scrape a single university faculty directory:
 
 ```bash
 python main.py --urls "https://www.example-university.ac.uk/staff"
 ```
 
-### Bulk — scrape multiple institutions from a file
+Scrape multiple institutions listed in a text file:
 
 ```bash
-# urls.txt — one URL per line
+# urls.txt — one directory URL per line
 python main.py --file urls.txt
 ```
 
-### Full configuration
+Full CLI configuration:
 
 ```bash
 python main.py \
@@ -192,80 +234,33 @@ python main.py \
   --max-pages 50 \
   --max-profiles 500 \
   --concurrency 15 \
-  --use-playwright-profiles
+  --model llama-3.3-70b-versatile
 ```
 
-### CLI Reference
+#### CLI Reference
 
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `--urls` | — | Space-separated list of directory URLs to scrape |
-| `--file` | — | Path to a `.txt` file with one URL per line |
-| `--max-pages` | `100` | Maximum directory pages to paginate through per URL |
-| `--max-profiles` | `1000` | Hard cap on profiles to discover |
-| `--concurrency` | `10` | Parallel HTTPX download workers |
-| `--use-playwright-profiles` | `False` | Use Playwright (slower, more robust) for profile downloads |
-| `--model` | `qwen3:14b` | Model name for Ollama / Local LLM |
+| `--file` | — | Path to `.txt` file containing one URL per line |
+| `--max-pages` | `100` | Maximum directory pages to paginate per URL |
+| `--max-profiles` | `1000` | Hard cap on profiles to crawl |
+| `--concurrency` | `10` | Concurrent HTTPX download workers |
+| `--use-playwright-profiles` | `False` | Use Playwright for profile downloads (slower, JS-heavy) |
+| `--model` | `llama-3.3-70b-versatile` | Groq model ID or local model name |
+| `--groq-api-key` | — | Overrides `GROQ_API_KEY` environment variable |
 
 ---
 
-## 📤 Output
+## 📤 Output Dataset Format
 
-After a successful pipeline run, results are saved to the `output/` directory:
+Extracted records are deduplicated by `profile_link` and saved to `output/`:
 
-### `faculty_data.csv`
-Raw tabular export for downstream processing or database ingestion.
-
-### `faculty_data.xlsx`
-Professionally styled spreadsheet — ready for immediate stakeholder delivery.
+### `faculty_data.xlsx` / `faculty_data.csv`
 
 | S No | Region | University Name | Department | Faculty Name | Origin | Position | Email | Phone | Profile Link | Research | Notes |
 |------|--------|-----------------|------------|--------------|--------|----------|-------|-------|--------------|----------|-------|
 | 1 | UK | University of Cambridge | Dept. of Computer Science | Dr. Priya Nair | India | Associate Professor | p.nair@cam.ac.uk | +44 … | https://… | NLP, ML | Expert in multi-lingual … |
-| … | … | … | … | … | … | … | … | … | … | … | … |
-
----
-
-## 🔬 Technical Deep Dive
-
-### Crawler — Smart URL Heuristics
-
-The crawler uses a path-structure heuristic to distinguish individual faculty profile URLs from generic site links:
-
-```python
-# Only accepts URLs where a known directory keyword is followed by a unique identifier
-# e.g. /staff/john-doe ✅   /staff/search ❌   /about ❌
-for kw in ['people', 'profile', 'staff', 'faculty', 'expert', 'member']:
-    if kw in parts and idx < len(parts) - 1:
-        if after_kw not in ['index.html', 'search', 'all']:
-            return True  # Likely a profile
-```
-
-### Parser — LLM Prompt Engineering
-
-The LLM is given a strict, zero-hallucination system prompt and a structured user prompt specifying exact output keys with explicit rules — no markdown, no explanation, raw JSON only:
-
-```
-- "name": Faculty member's full name WITHOUT any titles (no Prof., Dr., etc.)
-- "email": Must contain @. Empty string if not found.
-- "research_interests": Max 10–15 words. No paragraphs.
-- "origin": South Asian country only. If unclear, write "South Asian".
-```
-
-### Parser — Personal Website Enrichment
-
-For richer research interest and summary fields, the system:
-1. Detects external personal/lab website links on the profile page
-2. Fetches and cleans their content (up to 8,000 chars)
-3. Appends it to the LLM context before extraction
-
-### Exporter — Deduplication Strategy
-
-Deduplication is performed on the `profile_link` (URL) column — the most reliable unique identifier — before any export:
-
-```python
-df = df.drop_duplicates(subset=["profile_link"], keep="first")
-```
 
 ---
 
@@ -274,93 +269,31 @@ df = df.drop_duplicates(subset=["profile_link"], keep="first")
 | Layer | Technology |
 |-------|------------|
 | Language | Python 3.11+ |
+| Server Framework | FastAPI + Uvicorn |
+| Browser Extension | Chrome Extension API (Manifest V3, SSE) |
 | Browser Automation | Playwright (async, headless Chromium) |
 | HTTP Client | HTTPX (async, connection pooling) |
 | HTML Parsing | BeautifulSoup4 |
-| LLM Backend | Ollama (local) — Any model (Qwen, Llama, etc.) |
-| LLM Client | OpenAI-compatible Python SDK |
-| Data Processing | Pandas |
-| Report Export | openpyxl (styled XLSX) |
-| Logging | Python `logging` (file + console) |
-| Async Runtime | asyncio |
-
----
-
-## 📈 Performance Characteristics
-
-| Metric | Typical Value |
-|--------|---------------|
-| Directory pages crawled/min | ~30–60 (network-dependent) |
-| Profile downloads (HTTPX, 10 workers) | ~80–120 profiles/min |
-| LLM extraction time per profile | ~2–5s (depending on LLM size & hardware) |
-| Deduplication overhead | Negligible (<1s for 10k records) |
-| End-to-end for 500 profiles | ~15–30 minutes |
-
----
-
-## 🧪 Running Individual Modules
-
-Each module can be run standalone for development and debugging:
-
-```bash
-# Re-run parsing only (uses existing raw_data.json)
-python parser.py
-
-# Re-run export only (uses existing cleaned_data.json)
-python exporter.py
-```
-
----
-
-## 📝 Logging
-
-All pipeline activity is logged to both the console and `logs/scraper.log`:
-
-```
-2026-06-20 14:32:01,042 - main       - INFO - === Starting Faculty Extraction Pipeline ===
-2026-06-20 14:32:01,043 - main       - INFO - --- PHASE 1: CRAWLING ---
-2026-06-20 14:32:03,211 - crawler    - INFO - Found 48 profile links on page 1
-2026-06-20 14:32:45,819 - parser     - INFO - [12/48] LLM extracting: https://...
-2026-06-20 14:32:48,002 - parser     - INFO - INCLUDED: Priya Nair | Associate Professor | Univ. of Cambridge | Origin: India
-2026-06-20 14:33:10,441 - exporter   - INFO - Removed 3 duplicate entries.
-2026-06-20 14:33:10,502 - exporter   - INFO - Exported CSV  -> output/faculty_data.csv
-```
-
-On parsing failures, a screenshot of the problematic HTML is automatically saved to `screenshots/` for forensic debugging.
+| LLM Backend | Groq API (`llama-3.3-70b-versatile`) / Local Ollama |
+| Data Engineering | Pandas, openpyxl |
+| Async Runtime | Python `asyncio` |
 
 ---
 
 ## 🔒 Privacy & Ethics
 
-- This pipeline is intended for **research and academic intelligence purposes only**
-- All data collected is **publicly available** on institutional websites
-- No authentication is bypassed; no private data is accessed
-- The system respects standard HTTP conventions and includes soft rate-limiting (`asyncio.sleep`) between requests
-- Ensure compliance with the **Terms of Service** of each institution's website before large-scale scraping
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome. To add support for a new institution's URL pattern or extend the name classification dataset:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/add-institution-support`
-3. Make your changes and add tests where applicable
-4. Submit a Pull Request with a clear description
+- Intended for **academic research and dataset generation only**.
+- Operates exclusively on **publicly available** institutional faculty web pages.
+- Respects rate limits with soft delays (`asyncio.sleep`) between HTTP requests.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
+Licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**Built with Python · Playwright · Local LLMs · Data Automation**
-
-*Architected for zero manual intervention. Designed for scale.*
+**Built with Python · FastAPI · Playwright · Groq AI · Chrome Extension**
 
 </div>
