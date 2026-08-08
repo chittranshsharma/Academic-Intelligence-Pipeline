@@ -76,6 +76,92 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Browser-like HTTP helpers ────────────────────────────────────────────────────
+
+_UA_POOL = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
+]
+
+
+def _make_headers(referer: str = "") -> dict:
+    """Return a realistic set of browser HTTP headers that avoid WAF 403s."""
+    ua = random.choice(_UA_POOL)
+    is_firefox = "Firefox" in ua
+    headers = {
+        "User-Agent": ua,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Cache-Control": "max-age=0",
+    }
+    if not is_firefox:
+        headers.update({
+            "Sec-CH-UA": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "Sec-CH-UA-Mobile": "?0",
+            "Sec-CH-UA-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin" if referer else "none",
+            "Sec-Fetch-User": "?1",
+        })
+    if referer:
+        headers["Referer"] = referer
+    return headers
+
+
+async def _fetch_page(
+    client: httpx.AsyncClient,
+    url: str,
+    referer: str = "",
+    retries: int = 3,
+) -> str:
+    """
+    Fetch a URL with retry / back-off logic.
+    Rotates headers on each retry to reduce the chance of fingerprint-based blocks.
+    Returns the response text on success, raises on repeated failure.
+    """
+    last_exc: Exception = RuntimeError("Unknown error")
+    for attempt in range(1, retries + 1):
+        try:
+            resp = await client.get(
+                url,
+                headers=_make_headers(referer),
+                follow_redirects=True,
+            )
+            if resp.status_code == 403:
+                # Hard bot-block: back off more aggressively
+                wait = 2 ** attempt + random.uniform(0, 1)
+                logger.warning(f"403 on {url} (attempt {attempt}/{retries}) — backing off {wait:.1f}s")
+                if attempt < retries:
+                    await asyncio.sleep(wait)
+                    continue
+                resp.raise_for_status()  # will raise on final attempt
+            resp.raise_for_status()
+            return resp.text
+        except httpx.HTTPStatusError as e:
+            last_exc = e
+            if e.response.status_code in (429, 503):
+                wait = 5 * attempt + random.uniform(0, 2)
+                logger.warning(f"Rate-limited on {url} (attempt {attempt}/{retries}) — waiting {wait:.1f}s")
+                await asyncio.sleep(wait)
+            elif attempt < retries:
+                await asyncio.sleep(1.5 * attempt)
+            else:
+                raise
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError) as e:
+            last_exc = e
+            if attempt < retries:
+                await asyncio.sleep(1.5 * attempt)
+            else:
+                raise
+    raise last_exc
+
 # ── Parser Singleton ─────────────────────────────────────────────────────────
 groq_api_key = os.environ.get("GROQ_API_KEY", "")
 if not groq_api_key:
@@ -265,16 +351,10 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
             current_page_url = req.url
             page_num = 0
 
-            headers = {
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                )
-            }
+            # Headers are now rotated per-request via _make_headers() inside _fetch_page()
 
             async with httpx.AsyncClient(
-                headers=headers, follow_redirects=True, timeout=20.0
+                follow_redirects=True, timeout=25.0
             ) as client:
 
                 while current_page_url and page_num < req.max_pages:
@@ -284,9 +364,7 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
                     page_num += 1
 
                     try:
-                        resp = await client.get(current_page_url)
-                        resp.raise_for_status()
-                        html = resp.text
+                        html = await _fetch_page(client, current_page_url)
                     except Exception as e:
                         yield sse({"type": "error", "message": f"Failed to fetch page {page_num}: {e}"})
                         break
@@ -316,11 +394,23 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
                     if not next_url:
                         break  # End of pagination
                     current_page_url = next_url
-                    await asyncio.sleep(0.3)  # Polite delay
+                    await asyncio.sleep(random.uniform(0.8, 2.0))  # Polite delay + randomisation
 
             if not all_profile_urls:
-                yield sse({"type": "error", "message": "No profile links found on this page. Make sure you're on a faculty directory page (not an individual profile)."})
+                hint = (
+                    "No profile links found. Two common causes:\n"
+                    "1. JAVASCRIPT-RENDERED PAGE: Sites like Harvard SEAS, MIT, Stanford load "
+                    "faculty lists via JavaScript/React. The server can only read static HTML. "
+                    "Fix: Use the static/HTML version of the directory (look for a 'View All' "
+                    "plain-HTML page, or use Google to find: site:seas.harvard.edu/people/faculty)\n"
+                    "2. WRONG URL TYPE: You may have pasted an individual profile URL instead of a "
+                    "directory listing page.\n"
+                    "Try a URL like: https://www.ece.uw.edu/people/faculty/ or "
+                    "https://www.cs.utexas.edu/people/faculty-researchers"
+                )
+                yield sse({"type": "error", "message": hint})
                 return
+
 
             # ── Phase 2: Classify all profiles in concurrent batches ──────────
             parser = get_parser()
@@ -342,14 +432,12 @@ async def scrape_directory(req: ScrapeDirectoryRequest):
                         skipped_count += 1
                         return None, url, "duplicate"
 
-                    # Fetch profile HTML
+                    # Fetch profile HTML with browser headers + retry
                     try:
                         async with httpx.AsyncClient(
-                            headers=headers, follow_redirects=True, timeout=15.0
+                            follow_redirects=True, timeout=20.0
                         ) as c:
-                            pr = await c.get(url)
-                            pr.raise_for_status()
-                            profile_html = pr.text
+                            profile_html = await _fetch_page(c, url, referer=req.url)
                     except Exception as e:
                         skipped_count += 1
                         return None, url, f"fetch_error: {e}"
